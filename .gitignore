@@ -41,3 +41,9 @@ example
 # generated native folders
 /ios
 /android
+
+# others
+.vscode/
+.venv/
+swift-example/
+.kiro/settings/mcp.json

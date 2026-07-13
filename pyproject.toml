@@ -1,0 +1,7 @@
+[project]
+name = "transient"
+version = "0.1.0"
+description = "Transient is a cross-platform mobile application built with Expo and React Native."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
