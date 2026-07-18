@@ -68,6 +68,48 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'test-gig-id' }),
 }));
 
+// Mock RoleContext
+jest.mock('@/context/RoleContext', () => ({
+  useRole: () => ({ role: 'musician', switchRole: jest.fn(), isLoading: false }),
+  RoleProvider: ({ children }: any) => children,
+}));
+
+// Mock ApplicationContext
+jest.mock('@/context/ApplicationContext', () => ({
+  useApplications: () => ({
+    getApplicationsForGig: jest.fn(() => []),
+  }),
+  ApplicationProvider: ({ children }: any) => children,
+}));
+
+// Mock ProfileContext
+jest.mock('@/context/ProfileContext', () => ({
+  useProfile: () => ({
+    profile: { displayName: 'Test', avatarUrl: null, genres: [], musicLinks: [] },
+  }),
+}));
+
+// Mock useColorScheme
+jest.mock('@/hooks/useColorScheme', () => ({
+  useColorScheme: () => 'light',
+}));
+
+// Mock react-native-safe-area-context
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children, ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props}>{children}</View>;
+  },
+}));
+
+// Mock expo-image
+jest.mock('expo-image', () => ({
+  Image: ({ ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props} />;
+  },
+}));
+
 // ─── Component Imports (after mocks) ─────────────────────────────────────────
 
 import GigDetailScreen from '@/app/gig/[id]';
@@ -116,8 +158,9 @@ beforeEach(() => {
 
 describe('GigDetail — renders venue and location overlay', () => {
   it('renders the venue name in the overlay', async () => {
-    const { getByText } = await render(<GigDetailScreen />);
-    expect(getByText('The Blue Room')).toBeTruthy();
+    const { getAllByText } = await render(<GigDetailScreen />);
+    // Venue name appears in both the hero overlay and details section
+    expect(getAllByText('The Blue Room').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders city and country in the overlay', async () => {
@@ -141,9 +184,9 @@ describe('GigDetail — renders genre pill', () => {
 });
 
 describe('GigDetail — apply button for available gigs', () => {
-  it('renders "Apply" button for available gigs', async () => {
+  it('renders "Apply for this Gig" button for available gigs', async () => {
     const { getByText } = await render(<GigDetailScreen />);
-    expect(getByText('Apply')).toBeTruthy();
+    expect(getByText('Apply for this Gig')).toBeTruthy();
   });
 
   it('calls acceptGig when Apply is pressed', async () => {

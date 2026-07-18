@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -5,20 +7,22 @@ import {
     Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AmplifyPaymentSheet } from '@/components/AmplifyPaymentSheet';
+import { DateTimeField } from '@/components/DateTimeField';
 import ExampleSongList from '@/components/ExampleSongList';
 import GenrePicker from '@/components/GenrePicker';
-import { Colors, SemanticColors, Spacing } from '@/constants/theme';
+import { Brand, Colors, SemanticColors, Spacing } from '@/constants/theme';
 import { useGigs } from '@/context/GigContext';
+import { useGigPush } from '@/context/GigPushContext';
 import { validateExampleSongs, validateGigInput } from '@/data/gigService';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import type { CreateGigInput, ExampleSong, Genre } from '@/types';
+import type { CreateGigInput, ExampleSong, Genre, Gig } from '@/types';
 
 /**
  * Create tab screen — full multi-section gig creation form.
@@ -32,6 +36,7 @@ export default function CreateScreen() {
   const semantic = SemanticColors[scheme];
   const router = useRouter();
   const { createGig } = useGigs();
+  const { pushGig } = useGigPush();
 
   // Basic Info
   const [title, setTitle] = useState('');
@@ -61,6 +66,10 @@ export default function CreateScreen() {
 
   // Push Notifications
   const [pushNotifications, setPushNotifications] = useState(false);
+  const [amplifyRadius, setAmplifyRadius] = useState(10);
+
+  // Payment sheet
+  const [showPaymentSheet, setShowPaymentSheet] = useState(false);
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -110,18 +119,71 @@ export default function CreateScreen() {
     setErrors({});
     setSongsError(undefined);
 
-    // Submit
-    const result = createGig(input as CreateGigInput);
+    // If Amplify is enabled, show payment sheet before creating
+    if (pushNotifications) {
+      setShowPaymentSheet(true);
+      return;
+    }
+
+    // No Amplify — create gig directly
+    finalizeGigCreation();
+  };
+
+  /** Creates the gig and optionally pushes it (called after payment or directly) */
+  const finalizeGigCreation = () => {
+    const input: CreateGigInput = {
+      title: title.trim(),
+      venueName: venueName.trim(),
+      addressLine1: addressLine1.trim(),
+      addressLine2: addressLine2.trim() || undefined,
+      city: city.trim(),
+      postcode: postcode.trim(),
+      country: country.trim(),
+      date: date.trim(),
+      startTime: startTime.trim(),
+      endTime: endTime.trim(),
+      genres,
+      pay: Number(pay),
+      description: description.trim() || undefined,
+    };
+
+    const result = createGig(input);
 
     if ('type' in result && result.type === 'validation') {
       setErrors(result.fields);
       return;
     }
 
-    // Success
+    // Push the gig to matching musicians if Amplify was enabled
+    if (pushNotifications && !('type' in result)) {
+      pushGig(result as Gig);
+    }
+
+    // Success — offer to add to calendar
     Alert.alert('Success', 'Your gig has been created!', [
-      { text: 'OK', onPress: () => router.replace('/(tabs)') },
+      {
+        text: 'Add to Calendar',
+        onPress: async () => {
+          const { addGigToCalendar } = await import('@/services/calendarService');
+          const added = await addGigToCalendar(result as Gig);
+          if (added) {
+            Alert.alert('Added', 'Gig added to your calendar.', [
+              { text: 'OK', onPress: () => router.replace('/(tabs)') },
+            ]);
+          } else {
+            router.replace('/(tabs)');
+          }
+        },
+      },
+      { text: 'Skip', onPress: () => router.replace('/(tabs)'), style: 'cancel' },
     ]);
+  };
+
+  /** Called when payment is confirmed in the AmplifyPaymentSheet */
+  const handlePaymentConfirm = (_paymentIntentId: string) => {
+    // Create the gig first, then dismiss the payment sheet
+    finalizeGigCreation();
+    setShowPaymentSheet(false);
   };
 
   const renderError = (field: string) => {
@@ -137,7 +199,85 @@ export default function CreateScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
-        <Text style={[styles.screenTitle, { color: colors.text }]}>Create a Gig</Text>
+        <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </Pressable>
+          <Text style={[styles.screenTitle, { color: colors.text }]}>Create a Gig</Text>
+        </View>
+
+        {/* Amplify Toggle */}
+        <Pressable
+          onPress={() => setPushNotifications(!pushNotifications)}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: pushNotifications }}
+          accessibilityLabel="Amplify — push this gig to nearby musicians"
+          style={styles.amplifyContainer}
+        >
+          <LinearGradient
+            colors={pushNotifications ? ['#6366F1', '#8B5CF6', '#D946EF'] : [colors.backgroundElement, colors.backgroundElement]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.amplifyPill}
+          >
+            <Ionicons
+              name="radio-outline"
+              size={18}
+              color={pushNotifications ? '#FFFFFF' : colors.textSecondary}
+            />
+            <Text style={[styles.amplifyText, { color: pushNotifications ? '#FFFFFF' : colors.text }]}>
+              Amplify
+            </Text>
+            <Text style={[styles.amplifySubtext, { color: pushNotifications ? 'rgba(255,255,255,0.8)' : colors.textSecondary }]}>
+              {pushNotifications ? 'ON — pushes to musicians' : 'Push to nearby musicians'}
+            </Text>
+          </LinearGradient>
+        </Pressable>
+
+        {/* Amplify Radius Selector — shown when Amplify is on */}
+        {pushNotifications && (
+          <View style={styles.radiusSection}>
+            <Text style={[styles.radiusLabel, { color: colors.textSecondary }]}>
+              Broadcast radius
+            </Text>
+            <View style={[styles.radiusRow, { backgroundColor: colors.backgroundElement }]}>
+              {([5, 10, 15, 25] as const).map((miles) => {
+                const isSelected = amplifyRadius === miles;
+                return (
+                  <Pressable
+                    key={miles}
+                    onPress={() => setAmplifyRadius(miles)}
+                    style={[
+                      styles.radiusOption,
+                      isSelected && styles.radiusOptionSelected,
+                      isSelected && { backgroundColor: colors.text },
+                    ]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isSelected }}
+                    accessibilityLabel={`${miles} mile radius`}
+                  >
+                    <Text
+                      style={[
+                        styles.radiusOptionText,
+                        { color: isSelected ? colors.background : colors.textSecondary },
+                      ]}
+                    >
+                      {miles} mi
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={[styles.radiusCost, { color: colors.textSecondary }]}>
+              Amplify costs £1.79 per gig
+            </Text>
+          </View>
+        )}
 
         {/* Section: Basic Info */}
         <View style={styles.section}>
@@ -273,47 +413,32 @@ export default function CreateScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Date & Time</Text>
 
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Date</Text>
-          <TextInput
-            style={[
-              styles.input,
-              { color: colors.text, borderColor: errors.date ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
-            ]}
+          <DateTimeField
+            label="Date"
+            mode="date"
             value={date}
-            onChangeText={setDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textSecondary}
-            accessibilityLabel="Date"
+            onChange={setDate}
+            placeholder="Select date"
+            error={errors.date}
           />
-          {renderError('date')}
 
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Start Time</Text>
-          <TextInput
-            style={[
-              styles.input,
-              { color: colors.text, borderColor: errors.startTime ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
-            ]}
+          <DateTimeField
+            label="Start Time"
+            mode="time"
             value={startTime}
-            onChangeText={setStartTime}
-            placeholder="HH:MM"
-            placeholderTextColor={colors.textSecondary}
-            accessibilityLabel="Start time"
+            onChange={setStartTime}
+            placeholder="Select start time"
+            error={errors.startTime}
           />
-          {renderError('startTime')}
 
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>End Time</Text>
-          <TextInput
-            style={[
-              styles.input,
-              { color: colors.text, borderColor: errors.endTime ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
-            ]}
+          <DateTimeField
+            label="End Time"
+            mode="time"
             value={endTime}
-            onChangeText={setEndTime}
-            placeholder="HH:MM"
-            placeholderTextColor={colors.textSecondary}
-            accessibilityLabel="End time"
+            onChange={setEndTime}
+            placeholder="Select end time"
+            error={errors.endTime}
           />
-          {renderError('endTime')}
         </View>
 
         {/* Section: Genres */}
@@ -357,31 +482,31 @@ export default function CreateScreen() {
           />
         </View>
 
-        {/* Section: Push Notifications */}
-        <View style={styles.section}>
-          <View style={styles.switchRow}>
-            <Text style={[styles.switchLabel, { color: colors.text }]}>
-              Send push notifications to matching musicians
-            </Text>
-            <Switch
-              value={pushNotifications}
-              onValueChange={setPushNotifications}
-              trackColor={{ false: colors.border, true: semantic.actionBlue }}
-              accessibilityLabel="Send push notifications to matching musicians"
-            />
-          </View>
-        </View>
-
         {/* Submit Button */}
         <Pressable
           onPress={handleSubmit}
-          style={[styles.submitButton, { backgroundColor: semantic.actionBlue }]}
+          style={styles.submitButton}
           accessibilityRole="button"
           accessibilityLabel="Create Gig"
         >
-          <Text style={styles.submitButtonText}>Create Gig</Text>
+          <LinearGradient
+            colors={[Brand.purple, Brand.blue, Brand.cyan]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.submitButtonGradient}
+          >
+            <Text style={styles.submitButtonText}>Create Gig</Text>
+          </LinearGradient>
         </Pressable>
       </ScrollView>
+
+      {/* Amplify Payment Sheet */}
+      <AmplifyPaymentSheet
+        visible={showPaymentSheet}
+        radius={amplifyRadius as 5 | 10 | 15 | 25}
+        onSuccess={handlePaymentConfirm}
+        onCancel={() => setShowPaymentSheet(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -400,7 +525,66 @@ const styles = StyleSheet.create({
   screenTitle: {
     fontSize: 28,
     fontWeight: '700',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: Spacing.four,
+  },
+  amplifyContainer: {
+    marginBottom: Spacing.four,
+  },
+  amplifyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 50,
+  },
+  amplifyText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  amplifySubtext: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 'auto',
+  },
+  radiusSection: {
+    marginTop: -Spacing.three,
+    marginBottom: Spacing.four,
+    gap: Spacing.two,
+  },
+  radiusLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  radiusRow: {
+    flexDirection: 'row',
+    borderRadius: 20,
+    padding: 4,
+  },
+  radiusOption: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 16,
+  },
+  radiusOptionSelected: {
+    // backgroundColor set dynamically
+  },
+  radiusOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  radiusCost: {
+    fontSize: 12,
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
   section: {
     marginBottom: Spacing.four,
@@ -448,26 +632,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
   },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  switchLabel: {
-    fontSize: 15,
-    flex: 1,
-  },
   submitButton: {
-    paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    overflow: 'hidden',
     marginTop: Spacing.three,
+  },
+  submitButtonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   errorText: {
     fontSize: 12,

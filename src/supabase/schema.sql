@@ -319,6 +319,39 @@ CREATE POLICY "Users can update own notifications"
   WITH CHECK (auth.uid() = user_id);
 
 -- ===========================================================================
+-- Table: amplify_payments
+-- ===========================================================================
+-- Records each Amplify purchase. Linked to the gig that was amplified.
+-- The Stripe PaymentIntent ID is stored for reconciliation.
+-- ===========================================================================
+CREATE TABLE amplify_payments (
+  id                 uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  gig_id             uuid        NOT NULL REFERENCES gigs(id) ON DELETE CASCADE,
+  user_id            uuid        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  stripe_payment_id  text        NOT NULL,
+  amount_pence       integer     NOT NULL DEFAULT 179,
+  currency           text        NOT NULL DEFAULT 'gbp',
+  radius_miles       integer     NOT NULL CHECK (radius_miles IN (5, 10, 15, 25)),
+  status             text        NOT NULL DEFAULT 'succeeded',
+  created_at         timestamptz NOT NULL DEFAULT now()
+);
+
+-- Indexes: amplify_payments
+CREATE INDEX idx_amplify_payments_gig_id ON amplify_payments(gig_id);
+CREATE INDEX idx_amplify_payments_user_id ON amplify_payments(user_id);
+
+-- RLS: amplify_payments
+ALTER TABLE amplify_payments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own amplify payments"
+  ON amplify_payments FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own amplify payments"
+  ON amplify_payments FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- ===========================================================================
 -- Storage: profile-pictures bucket
 -- ===========================================================================
 -- Note: In Supabase, storage buckets are configured via the dashboard or

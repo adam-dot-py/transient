@@ -72,6 +72,55 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(() => Promise.resolve()),
 }));
 
+// Mock ProfileContext
+jest.mock('@/context/ProfileContext', () => ({
+  useProfile: () => ({
+    profile: { displayName: 'Test User', avatarUrl: null, genres: [], musicLinks: [], city: null, country: null },
+  }),
+}));
+
+// Mock ApplicationContext
+jest.mock('@/context/ApplicationContext', () => ({
+  useApplications: () => ({
+    getApplicationsForGig: jest.fn(() => []),
+  }),
+  ApplicationProvider: ({ children }: any) => children,
+}));
+
+// Mock GigPushContext
+jest.mock('@/context/GigPushContext', () => ({
+  useGigPush: () => ({
+    pushGig: jest.fn(),
+  }),
+}));
+
+// Mock useColorScheme
+jest.mock('@/hooks/useColorScheme', () => ({
+  useColorScheme: () => 'light',
+}));
+
+// Mock react-native-safe-area-context
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children, ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props}>{children}</View>;
+  },
+}));
+
+// Mock datetimepicker
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { View } = require('react-native');
+  return { __esModule: true, default: (props: any) => <View {...props} /> };
+});
+
+// Mock expo-image
+jest.mock('expo-image', () => ({
+  Image: ({ ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props} />;
+  },
+}));
+
 // ─── Providers ───────────────────────────────────────────────────────────────
 
 import { GigProvider } from '@/context/GigContext';
@@ -139,16 +188,16 @@ describe('Bug Condition Exploration', () => {
   // ─── Test 1c: HosterDashboard SectionTitle ───────────────────────────────
 
   describe('Test 1c: HosterDashboard SectionTitle with "Home" text', () => {
-    it('should render SectionTitle component with "Home" text when role is hoster', async () => {
+    it('should render greeting with user name when role is hoster', async () => {
       const result = await render(
         <TestProviders role="hoster">
           <HomeScreen />
         </TestProviders>
       );
 
-      // SectionTitle renders a heading with the sectionName text
-      const homeTitle = result.queryByText('Home');
-      expect(homeTitle).not.toBeNull();
+      // Home screen now shows a greeting with the user's first name
+      const greeting = result.queryByText(/Hi,.*!/);
+      expect(greeting).not.toBeNull();
     });
   });
 });

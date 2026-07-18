@@ -8,14 +8,16 @@ import {
     Text,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FilterChip } from '@/components/FilterChip';
 import { GigCard } from '@/components/GigCard';
+import { ProfileAvatarMenu } from '@/components/ProfileAvatarMenu';
+import { RoleToggle } from '@/components/RoleToggle';
+import { ScreenBackground } from '@/components/ScreenBackground';
 import { SectionHeader } from '@/components/SectionHeader';
-import { SectionTitle } from '@/components/SectionTitle';
-import { Colors, Spacing } from '@/constants/theme';
+import { Brand, Colors, Spacing } from '@/constants/theme';
 import { useGigs } from '@/context/GigContext';
+import { useProfile } from '@/context/ProfileContext';
 import { useRole } from '@/context/RoleContext';
 import { filterGigsByTimeRange } from '@/data/gigService';
 import { CURRENT_USER } from '@/data/mockProfiles';
@@ -32,11 +34,19 @@ const FILTER_LABELS: Record<GigFilter, string> = {
   thisMonth: 'This Month',
 };
 
+const FILTER_ICONS: Record<GigFilter, string> = {
+  all: 'grid-outline',
+  today: 'today-outline',
+  thisWeek: 'calendar-outline',
+  nextWeek: 'calendar-number-outline',
+  thisMonth: 'albums-outline',
+};
+
 const MAX_CAROUSEL_ITEMS = 20;
 
 export default function HomeScreen() {
-  const scheme = useColorScheme();
   const { role } = useRole();
+  const scheme = useColorScheme();
 
   if (role === 'musician') {
     return <MusicianDashboard scheme={scheme} />;
@@ -48,7 +58,9 @@ export default function HomeScreen() {
 function MusicianDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
   const router = useRouter();
   const { gigs } = useGigs();
+  const { profile } = useProfile();
   const [selectedFilter, setSelectedFilter] = useState<GigFilter>('all');
+  const colors = Colors[scheme];
 
   const filteredGigs = useMemo(
     () => filterGigsByTimeRange(gigs, selectedFilter).slice(0, MAX_CAROUSEL_ITEMS),
@@ -63,13 +75,19 @@ function MusicianDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
     // TODO: implement favorite toggling
   };
 
-  const colors = Colors[scheme];
-
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <ScreenBackground>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Section Title */}
-        <SectionTitle sectionName="Home" />
+        {/* Header row: Avatar + Greeting + Role Toggle */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <ProfileAvatarMenu />
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              Hi, {profile?.displayName?.split(' ')[0] ?? 'there'}! {'\u{1F44B}'}
+            </Text>
+          </View>
+          <RoleToggle />
+        </View>
 
         {/* Filter Chips */}
         <ScrollView
@@ -82,19 +100,18 @@ function MusicianDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
             <FilterChip
               key={filter}
               title={FILTER_LABELS[filter]}
+              icon={FILTER_ICONS[filter] as any}
               isSelected={selectedFilter === filter}
               onPress={() => setSelectedFilter(filter)}
             />
           ))}
         </ScrollView>
 
-        {/* Nearby Gigs Section — large cards (270x259) */}
+        {/* Nearby Gigs Section */}
         <SectionHeader
           title="Nearby Gigs"
           actionTitle="See All"
-          onAction={() => {
-            // TODO: navigate to full gig list
-          }}
+          onAction={() => {}}
         />
 
         {filteredGigs.length > 0 ? (
@@ -122,7 +139,7 @@ function MusicianDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
           </Text>
         )}
 
-        {/* Recommended Gigs Section — smaller cards (270x150) */}
+        {/* Recommended Gigs Section */}
         <SectionHeader title="Recommended Gigs" />
 
         {filteredGigs.length > 0 ? (
@@ -150,13 +167,15 @@ function MusicianDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
           </Text>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
 function HosterDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
   const router = useRouter();
   const { getHosterGigs } = useGigs();
+  const { profile } = useProfile();
+  const colors = Colors[scheme];
 
   const { active, past } = getHosterGigs(CURRENT_USER.id);
 
@@ -165,22 +184,30 @@ function HosterDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
   };
 
   const handleCreateGig = () => {
-    router.push('/gig/create');
+    router.push('/(tabs)/create');
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: Colors[scheme].background }]}>
+    <ScreenBackground>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <SectionTitle sectionName="Home" />
+        {/* Header row: Avatar + Greeting + Role Toggle */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <ProfileAvatarMenu />
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              Hi, {profile?.displayName?.split(' ')[0] ?? 'there'}! {'\u{1F44B}'}
+            </Text>
+          </View>
+          <RoleToggle />
+        </View>
+
         <Pressable
-          style={[styles.createButton, { backgroundColor: Colors[scheme].backgroundSelected }]}
+          style={[styles.createButton, { borderColor: Brand.purple + '40' }]}
           onPress={handleCreateGig}
           accessibilityRole="button"
           accessibilityLabel="Create Gig"
         >
-          <Text style={[styles.createButtonText, { color: Colors[scheme].text }]}>
-            + Create Gig
-          </Text>
+          <Text style={[styles.createButtonText, { color: Brand.purple }]}>+ Create Gig</Text>
         </Pressable>
 
         {active.length > 0 ? (
@@ -201,7 +228,7 @@ function HosterDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
             />
           </>
         ) : (
-          <Text style={[styles.emptyText, { color: Colors[scheme].textSecondary }]}>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
             No active gigs
           </Text>
         )}
@@ -224,24 +251,40 @@ function HosterDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
             />
           </>
         ) : (
-          <Text style={[styles.emptyText, { color: Colors[scheme].textSecondary }]}>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
             No past gigs
           </Text>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.five,
+    paddingBottom: 100,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    letterSpacing: -0.48,
+    lineHeight: 34,
   },
   chipScroll: {
     marginTop: Spacing.two,
@@ -268,8 +311,10 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.three,
     marginBottom: Spacing.four,
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
   },
   createButtonText: {
     fontSize: 18,

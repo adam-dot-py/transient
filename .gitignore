@@ -47,3 +47,6 @@ example
 .venv/
 swift-example/
 .kiro/settings/mcp.json
+
+# Backend setup guide (private, local reference)
+BACKEND_SETUP.md

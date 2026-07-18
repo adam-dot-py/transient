@@ -1,19 +1,19 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
-import { Colors, SemanticColors } from '@/constants/theme';
+import { Brand, Colors, Spacing } from '@/constants/theme';
+import { ALL_GENRES, GENRE_LABELS } from '@/data/genres';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import type { Genre } from '@/types';
-
-const ALL_GENRES: Genre[] = [
-  'rock',
-  'jazz',
-  'blues',
-  'electronic',
-  'folk',
-  'classical',
-  'pop',
-  'country',
-];
 
 interface GenrePickerProps {
   selectedGenres: Genre[];
@@ -22,69 +22,136 @@ interface GenrePickerProps {
 }
 
 /**
- * GenrePicker — a reusable multi-select genre picker rendered as a
- * horizontal wrapping row of tappable chips/pills.
- *
- * Used by both the Musician Profile editor and Gig Creation form.
- * Selected genres are highlighted, unselected are outlined.
- * Tapping toggles selection.
+ * GenrePicker — Shows selected genres as removable pills with a "+" button
+ * that opens a searchable modal list of all available genres.
  */
 export default function GenrePicker({
   selectedGenres,
   onGenresChange,
   error,
 }: GenrePickerProps) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme];
-  const semantic = SemanticColors[colorScheme];
+  const scheme = useColorScheme();
+  const colors = Colors[scheme];
+  const [modalVisible, setModalVisible] = useState(false);
+  const [search, setSearch] = useState('');
 
-  const handleToggle = (genre: Genre) => {
-    if (selectedGenres.includes(genre)) {
-      onGenresChange(selectedGenres.filter((g) => g !== genre));
-    } else {
+  const handleRemove = (genre: Genre) => {
+    onGenresChange(selectedGenres.filter((g) => g !== genre));
+  };
+
+  const handleAdd = (genre: Genre) => {
+    if (!selectedGenres.includes(genre)) {
       onGenresChange([...selectedGenres, genre]);
     }
   };
 
-  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const filteredGenres = ALL_GENRES.filter((genre) =>
+    GENRE_LABELS[genre].toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <View style={styles.container}>
       <Text style={[styles.label, { color: colors.text }]}>Genres</Text>
-      <View style={styles.chipsContainer}>
-        {ALL_GENRES.map((genre) => {
-          const isSelected = selectedGenres.includes(genre);
-          const chipBackground = isSelected
-            ? semantic.actionBlue
-            : 'transparent';
-          const chipBorderColor = isSelected
-            ? semantic.actionBlue
-            : colors.border;
-          const chipTextColor = isSelected ? '#FFFFFF' : colors.text;
 
-          return (
+      {/* Selected genre pills + Add button */}
+      <View style={styles.pillsRow}>
+        {selectedGenres.map((genre) => (
+          <View key={genre} style={[styles.selectedPill, { backgroundColor: Brand.purple }]}>
+            <Text style={styles.selectedPillText}>{GENRE_LABELS[genre]}</Text>
             <Pressable
-              key={genre}
-              onPress={() => handleToggle(genre)}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: chipBackground,
-                  borderColor: chipBorderColor,
-                },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={`${capitalize(genre)}${isSelected ? ', selected' : ''}`}
-              accessibilityState={{ selected: isSelected }}
+              onPress={() => handleRemove(genre)}
+              hitSlop={6}
+              accessibilityLabel={`Remove ${GENRE_LABELS[genre]}`}
             >
-              <Text style={[styles.chipText, { color: chipTextColor }]}>
-                {capitalize(genre)}
-              </Text>
+              <Ionicons name="close" size={14} color="#FFFFFF" />
             </Pressable>
-          );
-        })}
+          </View>
+        ))}
+
+        {/* Add genre button */}
+        <Pressable
+          style={[styles.addPill, { borderColor: Brand.purple }]}
+          onPress={() => setModalVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Add genre"
+        >
+          <Ionicons name="add" size={16} color={Brand.purple} />
+          <Text style={[styles.addPillText, { color: Brand.purple }]}>Add</Text>
+        </Pressable>
       </View>
+
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+      {/* Genre selection modal */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          {/* Modal header */}
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Genres</Text>
+            <Pressable
+              onPress={() => { setModalVisible(false); setSearch(''); }}
+              accessibilityLabel="Done"
+            >
+              <Text style={[styles.modalDone, { color: Brand.purple }]}>Done</Text>
+            </Pressable>
+          </View>
+
+          {/* Search bar */}
+          <View style={[styles.searchBar, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+            <Ionicons name="search" size={18} color={colors.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search genres..."
+              placeholderTextColor={colors.textSecondary}
+              autoCorrect={false}
+            />
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch('')}>
+                <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+              </Pressable>
+            )}
+          </View>
+
+          {/* Genre list */}
+          <FlatList
+            data={filteredGenres}
+            keyExtractor={(item) => item}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => {
+              const isSelected = selectedGenres.includes(item);
+              return (
+                <Pressable
+                  style={[styles.genreRow, { borderColor: colors.border }]}
+                  onPress={() => isSelected ? handleRemove(item) : handleAdd(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isSelected }}
+                >
+                  <Text style={[styles.genreRowText, { color: colors.text }]}>
+                    {GENRE_LABELS[item]}
+                  </Text>
+                  {isSelected ? (
+                    <Ionicons name="checkmark-circle" size={22} color={Brand.purple} />
+                  ) : (
+                    <Ionicons name="add-circle-outline" size={22} color={colors.textSecondary} />
+                  )}
+                </Pressable>
+              );
+            }}
+            ListEmptyComponent={
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                No genres match "{search}"
+              </Text>
+            }
+          />
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -98,26 +165,96 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
-  chipsContainer: {
+  pillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    justifyContent: 'center',
+  selectedPill: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
   },
-  chipText: {
+  selectedPillText: {
     fontSize: 14,
     fontWeight: '500',
+    color: '#FFFFFF',
+  },
+  addPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+  },
+  addPillText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   errorText: {
     fontSize: 12,
     color: '#FF3B30',
     marginTop: 8,
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  modalDone: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: Spacing.three,
+    marginBottom: Spacing.two,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
+  },
+  listContent: {
+    paddingHorizontal: Spacing.three,
+    paddingBottom: Spacing.five,
+  },
+  genreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  genreRowText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  emptyText: {
+    textAlign: 'center',
+    paddingTop: 32,
+    fontSize: 15,
   },
 });

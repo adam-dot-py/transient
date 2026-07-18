@@ -7,9 +7,11 @@ import type { ApplicationStatusChangeEvent } from "@/context/ApplicationContext"
 import { ApplicationProvider } from "@/context/ApplicationContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { GigProvider, useGigs } from "@/context/GigContext";
+import { GigPushProvider, useGigPush } from "@/context/GigPushContext";
 import { NotificationProvider, useNotificationContext } from "@/context/NotificationContext";
 import { ProfileProvider } from "@/context/ProfileContext";
-import { RoleProvider } from "@/context/RoleContext";
+import { RoleProvider, useRole } from "@/context/RoleContext";
+import { GigPushAlert } from "@/components/GigPushAlert";
 import { buildNotificationPayload } from "@/data/notificationService";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import type { Notification } from "@/types";
@@ -100,6 +102,38 @@ function ApplicationWithNotifications({ children }: { children: React.ReactNode 
   );
 }
 
+/**
+ * Renders the GigPushAlert modal when:
+ * 1. The user is in musician mode
+ * 2. There is a pushed gig in the queue
+ *
+ * On apply: accepts the gig and dismisses the alert.
+ * On dismiss: removes the gig from the queue without action.
+ */
+function GigPushAlertRenderer() {
+  const { role } = useRole();
+  const { currentPushedGig, dismissPushedGig } = useGigPush();
+  const { acceptGig } = useGigs();
+
+  const handleApply = (gigId: string) => {
+    acceptGig(gigId);
+    dismissPushedGig();
+  };
+
+  const isVisible = role === 'musician' && currentPushedGig !== null;
+
+  if (!currentPushedGig) return null;
+
+  return (
+    <GigPushAlert
+      gig={currentPushedGig}
+      visible={isVisible}
+      onApply={handleApply}
+      onDismiss={dismissPushedGig}
+    />
+  );
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
@@ -109,10 +143,13 @@ export default function RootLayout() {
         <ProfileProvider>
           <GigProvider>
             <NotificationProvider>
-              <ApplicationWithNotifications>
-                <AuthGate />
-                <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-              </ApplicationWithNotifications>
+              <GigPushProvider>
+                <ApplicationWithNotifications>
+                  <AuthGate />
+                  <GigPushAlertRenderer />
+                  <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+                </ApplicationWithNotifications>
+              </GigPushProvider>
             </NotificationProvider>
           </GigProvider>
         </ProfileProvider>

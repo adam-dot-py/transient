@@ -236,6 +236,33 @@ export interface NotificationUpdate {
   read?: boolean;
 }
 
+export interface AmplifyPaymentRow {
+  id: string;
+  gig_id: string;
+  user_id: string;
+  stripe_payment_id: string;
+  amount_pence: number;
+  currency: string;
+  radius_miles: 5 | 10 | 15 | 25;
+  status: string;
+  created_at: string;
+}
+
+export interface AmplifyPaymentInsert {
+  id?: string;
+  gig_id: string;
+  user_id: string;
+  stripe_payment_id: string;
+  amount_pence?: number;
+  currency?: string;
+  radius_miles: 5 | 10 | 15 | 25;
+  status?: string;
+}
+
+export interface AmplifyPaymentUpdate {
+  status?: string;
+}
+
 // ─── Database Interface ──────────────────────────────────────────────────────
 
 /**
@@ -281,6 +308,11 @@ export interface Database {
         Row: NotificationRow;
         Insert: NotificationInsert;
         Update: NotificationUpdate;
+      };
+      amplify_payments: {
+        Row: AmplifyPaymentRow;
+        Insert: AmplifyPaymentInsert;
+        Update: AmplifyPaymentUpdate;
       };
     };
   };

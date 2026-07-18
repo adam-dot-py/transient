@@ -1,5 +1,20 @@
 # User Stories
 
+Feature: Main app purpose
+AS A app user
+I WANT to be able to create gigs for musicians in 2 ways; first, by creating a gig, setting description, date, price etc, and allowing a musician user to apply. Secondly, by creating a gig but toggling the push option, which operates like Uber - pushing the request out to musicians in the area as a push notication, allowing them to review the gig, apply and be accepted rapidly by the app user. The app user would receive the artists profile that they have set up on the application
+SO THAT we can make the process of hosting and getting gigs significantly easier for musicians, making it more accessible and friendly.
+
+Feature: Amplify
+AS A app user
+I WANT the option to push my gig out to musicians in my local area (say 10 mile radius, or a custom radius set by the user). This feature is called Amplify and is an in app purchase, payable via Apple Pay, Google Pay and basic card payments, with a small fee of 1.79.
+SO THAT the app can have a unobtrusive revenue stream
+
+Feature: Apple Glass
+AS A app user
+I WANT the application to have an ultra modern, easy to use UI/UX, akin to apps like Uber, Just Eat and others. It should incorporate Apple Glass best practice design elements, especially the floating task bar etc, as well as best practice modern UI practices for Android
+SO THAT users enjoy using the app, and so it looks native to their device.
+
 Feature: Musician Profile 
 AS A musician user
 I WANT to have a section of the app where I can build my profile, providing a profile picture, a bio, location, genres of music I play, and integration with Apple Music and Google Music to show case playlists or songs I can play as part of my set

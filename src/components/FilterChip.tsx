@@ -1,37 +1,55 @@
-import { Pressable, StyleSheet, Text, useColorScheme } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { Colors, SemanticColors } from '@/constants/theme';
+import { Brand, Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 export interface FilterChipProps {
   title: string;
   isSelected: boolean;
   onPress: () => void;
+  /** Optional Ionicons icon name to show before the label */
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
 }
 
 /**
- * A capsule-shaped filter pill used for time-based gig filtering.
- * Matches the Figma "Gig Filters" section:
- * - Selected: red accent background (#FF0040 at 90% opacity), white text
- * - Unselected: white background with #E6E6E6 border, dark text
+ * FilterChip — A capsule-shaped filter pill with brand purple active state.
+ * Matches the Activity screen filter button design.
+ *
+ * - Selected: brand purple background, white text/icon
+ * - Unselected: element background with border, theme text
  */
-export function FilterChip({ title, isSelected, onPress }: FilterChipProps) {
-  const rawScheme = useColorScheme();
-  const scheme: 'light' | 'dark' = rawScheme === 'light' ? 'light' : 'dark';
+export function FilterChip({ title, isSelected, onPress, icon }: FilterChipProps) {
+  const scheme = useColorScheme();
   const colors = Colors[scheme];
-  const semantic = SemanticColors[scheme];
-
-  const backgroundColor = isSelected ? semantic.accentRed : colors.background;
-  const borderColor = isSelected ? 'transparent' : colors.border;
-  const textColor = isSelected ? '#FFFFFF' : colors.text;
 
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.chip, { backgroundColor, borderColor }]}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: isSelected ? Brand.purple : colors.backgroundElement,
+          borderColor: isSelected ? Brand.purple : colors.border,
+        },
+      ]}
       accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
       accessibilityLabel={title}
     >
-      <Text style={[styles.title, { color: textColor }]}>
+      {icon && (
+        <Ionicons
+          name={icon}
+          size={14}
+          color={isSelected ? '#FFFFFF' : colors.textSecondary}
+        />
+      )}
+      <Text
+        style={[
+          styles.title,
+          { color: isSelected ? '#FFFFFF' : colors.text },
+        ]}
+      >
         {title}
       </Text>
     </Pressable>
@@ -40,16 +58,17 @@ export function FilterChip({ title, isSelected, onPress }: FilterChipProps) {
 
 const styles = StyleSheet.create({
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   title: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     lineHeight: 20,
   },
 });

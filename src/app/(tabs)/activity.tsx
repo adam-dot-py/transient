@@ -1,25 +1,42 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ApplicationRow } from '@/components/ApplicationRow';
 import { NotificationCard } from '@/components/NotificationCard';
-import { SectionHeader } from '@/components/SectionHeader';
-import { SectionTitle } from '@/components/SectionTitle';
-import { Colors, SemanticColors, Spacing } from '@/constants/theme';
+import { ProfileAvatarMenu } from '@/components/ProfileAvatarMenu';
+import { ScreenBackground } from '@/components/ScreenBackground';
+import { Brand, Colors, Spacing } from '@/constants/theme';
 import { useNotificationContext } from '@/context/NotificationContext';
 import { MOCK_APPLICATIONS } from '@/data/mockApplications';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import type { Notification } from '@/types';
 
+type NotificationFilter = 'all' | 'recent' | 'unread';
+
 export default function ActivityScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme];
-  const semantic = SemanticColors[colorScheme];
+  const scheme = useColorScheme();
+  const colors = Colors[scheme];
+  const [filter, setFilter] = useState<NotificationFilter>('all');
 
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotificationContext();
+
+  const filteredNotifications = useMemo(() => {
+    switch (filter) {
+      case 'recent':
+        // Sort by most recent (already sorted, but ensure descending)
+        return [...notifications].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      case 'unread':
+        return notifications.filter((n) => !n.read);
+      default:
+        return notifications;
+    }
+  }, [notifications, filter]);
 
   const handleApplicationPress = (applicationId: string) => {
     const application = MOCK_APPLICATIONS.find((app) => app.id === applicationId);
@@ -35,33 +52,59 @@ export default function ActivityScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <ScreenBackground>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <SectionTitle sectionName="Activity" />
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <ProfileAvatarMenu />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Activity</Text>
+        </View>
 
-        {/* Notifications section */}
-        <View style={styles.sectionHeaderRow}>
-          <SectionHeader
-            title="Notifications"
-            actionTitle={unreadCount > 0 ? 'Mark all as read' : undefined}
-            onAction={unreadCount > 0 ? markAllAsRead : undefined}
+        {/* Filter buttons */}
+        <View style={styles.filterRow}>
+          <FilterButton
+            label="All"
+            icon="grid-outline"
+            active={filter === 'all'}
+            onPress={() => setFilter('all')}
+            scheme={scheme}
           />
+          <FilterButton
+            label="Recent"
+            icon="time-outline"
+            active={filter === 'recent'}
+            onPress={() => setFilter('recent')}
+            scheme={scheme}
+          />
+          <FilterButton
+            label="Unread"
+            icon="mail-unread-outline"
+            active={filter === 'unread'}
+            onPress={() => setFilter('unread')}
+            badge={unreadCount > 0 ? unreadCount : undefined}
+            scheme={scheme}
+          />
+        </View>
+
+        {/* Notifications section header */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
           {unreadCount > 0 && (
-            <View style={[styles.badge, { backgroundColor: semantic.accentRed }]}>
-              <Text style={styles.badgeText}>{unreadCount}</Text>
-            </View>
+            <Pressable onPress={markAllAsRead} accessibilityRole="button">
+              <Text style={[styles.markReadText, { color: Brand.blue }]}>Mark all read</Text>
+            </Pressable>
           )}
         </View>
 
-        {notifications.length === 0 ? (
+        {filteredNotifications.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              No notifications yet
+              {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
             </Text>
           </View>
         ) : (
           <View style={styles.notificationList}>
-            {notifications.map((notification) => (
+            {filteredNotifications.map((notification) => (
               <NotificationCard
                 key={notification.id}
                 notification={notification}
@@ -72,11 +115,9 @@ export default function ActivityScreen() {
         )}
 
         {/* Applications section */}
-        <SectionHeader
-          title="Your Applications"
-          actionTitle="View All"
-          onAction={() => {}}
-        />
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Applications</Text>
+        </View>
 
         {MOCK_APPLICATIONS.length === 0 ? (
           <View style={styles.emptyState}>
@@ -96,37 +137,132 @@ export default function ActivityScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenBackground>
+  );
+}
+
+function FilterButton({
+  label,
+  icon,
+  active,
+  onPress,
+  badge,
+  scheme,
+}: {
+  label: string;
+  icon: string;
+  active: boolean;
+  onPress: () => void;
+  badge?: number;
+  scheme: 'light' | 'dark';
+}) {
+  const colors = Colors[scheme];
+
+  return (
+    <Pressable
+      style={[
+        styles.filterButton,
+        {
+          backgroundColor: active ? Brand.purple : colors.backgroundElement,
+          borderColor: active ? Brand.purple : colors.border,
+        },
+      ]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+    >
+      <Ionicons
+        name={icon as any}
+        size={14}
+        color={active ? '#FFFFFF' : colors.textSecondary}
+      />
+      <Text
+        style={[
+          styles.filterButtonText,
+          { color: active ? '#FFFFFF' : colors.text },
+        ]}
+      >
+        {label}
+      </Text>
+      {badge !== undefined && badge > 0 && (
+        <View style={[styles.filterBadge, { backgroundColor: active ? '#FFFFFF' : Brand.purple }]}>
+          <Text style={[styles.filterBadgeText, { color: active ? Brand.purple : '#FFFFFF' }]}>
+            {badge}
+          </Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 100,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    letterSpacing: -0.48,
+    lineHeight: 34,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  filterBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
   },
-  badge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.three,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
   },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+  markReadText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   notificationList: {
     paddingHorizontal: Spacing.three,
@@ -140,12 +276,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   emptyState: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 64,
+    paddingTop: 48,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 15,
   },
 });

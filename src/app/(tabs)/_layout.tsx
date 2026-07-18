@@ -1,35 +1,52 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { Brand, Colors } from '@/constants/theme';
 import { useNotificationContext } from '@/context/NotificationContext';
+import { useRole } from '@/context/RoleContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+/**
+ * Tab layout following Apple HIG and Material 3 best practices:
+ * - Full-width, fixed to bottom (not floating)
+ * - Icon + label for each tab
+ * - Brand purple accent on active tab
+ * - Clean top border separator
+ * - Proper safe area insets handled by the Tabs component
+ */
 export default function TabLayout() {
   const scheme = useColorScheme();
   const { unreadCount } = useNotificationContext();
+  const { role } = useRole();
 
-  const activeColor = Colors[scheme].text;
-  const inactiveColor = Colors[scheme].textSecondary;
-  const backgroundColor = Colors[scheme].background;
+  const isDark = scheme === 'dark';
+  const colors = Colors[scheme];
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: activeColor,
-        tabBarInactiveTintColor: inactiveColor,
-        tabBarStyle: [styles.tabBar, { backgroundColor }],
-        tabBarShowLabel: false,
+        tabBarActiveTintColor: Brand.purple,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: isDark ? '#141422' : '#FFFFFF',
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border,
+          height: Platform.select({ ios: 88, android: 68 }),
+          paddingTop: 8,
+          paddingBottom: Platform.select({ ios: 28, android: 8 }),
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <SymbolView name="house.fill" tintColor={color} size={24} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -37,8 +54,8 @@ export default function TabLayout() {
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color }) => (
-            <SymbolView name="magnifyingglass" tintColor={color} size={24} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'compass' : 'compass-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -46,19 +63,20 @@ export default function TabLayout() {
         name="create"
         options={{
           title: 'Create',
-          tabBarIcon: ({ color }) => (
-            <SymbolView name="plus.circle.fill" tintColor={color} size={24} />
+          href: role === 'musician' ? null : '/(tabs)/create',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} size={24} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="activity"
         options={{
-          title: 'Notifications',
+          title: 'Activity',
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarBadgeStyle: styles.tabBarBadge,
-          tabBarIcon: ({ color }) => (
-            <SymbolView name="bell.fill" tintColor={color} size={24} />
+          tabBarBadgeStyle: styles.badge,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -66,10 +84,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => (
-            <View style={[styles.profileIcon, { borderColor: color }]}>
-              <SymbolView name="person.fill" tintColor={color} size={16} />
-            </View>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -78,28 +94,16 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-    elevation: 0,
-    height: 78,
-    paddingTop: 12,
-    paddingBottom: 8,
+  tabBarLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
   },
-  tabBarBadge: {
+  badge: {
     backgroundColor: '#FE2C55',
     fontSize: 10,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-  },
-  profileIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    backgroundColor: '#D9D9D9',
   },
 });

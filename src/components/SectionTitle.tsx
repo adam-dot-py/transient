@@ -1,26 +1,26 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { ProfileAvatarMenu } from '@/components/ProfileAvatarMenu';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface SectionTitleProps {
   sectionName: string;
-  /** @deprecated Profile is now accessible via the tab bar */
-  onProfilePress?: () => void;
+  /** Whether to show the profile avatar on the left. Defaults to true. */
+  showAvatar?: boolean;
 }
 
 /**
- * SectionTitle — Large bold section heading.
- *
- * Matches the Figma "Home" text element at the top of the Home Page.
- * Simple, left-aligned heading with 24px semi-bold text and -0.02em letter spacing.
+ * SectionTitle — Large bold section heading with optional profile avatar
+ * positioned to the left of the title.
  */
-export function SectionTitle({ sectionName }: SectionTitleProps) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme];
+export function SectionTitle({ sectionName, showAvatar = true }: SectionTitleProps) {
+  const scheme = useColorScheme();
+  const colors = Colors[scheme];
 
   return (
     <View style={styles.container}>
+      {showAvatar && <ProfileAvatarMenu />}
       <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
         {sectionName}
       </Text>
@@ -30,6 +30,9 @@ export function SectionTitle({ sectionName }: SectionTitleProps) {
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 4,
@@ -39,5 +42,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.48,
     lineHeight: 34,
+    flex: 1,
   },
 });

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, SemanticColors, Spacing } from '@/constants/theme';
+import { Brand, Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export interface SectionHeaderProps {
@@ -11,16 +11,15 @@ export interface SectionHeaderProps {
 
 /**
  * Section header with title and optional trailing action button.
- * Used above carousels and list sections to label content groups.
+ * Uses brand cyan for the action link.
  */
 export function SectionHeader({ title, actionTitle, onAction }: SectionHeaderProps) {
   const scheme = useColorScheme();
-  const textColor = Colors[scheme].text;
-  const actionColor = SemanticColors[scheme].actionBlue;
+  const colors = Colors[scheme];
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: textColor }]}>{title}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       {actionTitle && (
         <Pressable
           style={styles.actionButton}
@@ -28,7 +27,7 @@ export function SectionHeader({ title, actionTitle, onAction }: SectionHeaderPro
           accessibilityRole="button"
           accessibilityLabel={actionTitle}
         >
-          <Text style={[styles.actionText, { color: actionColor }]}>{actionTitle}</Text>
+          <Text style={[styles.actionText, { color: Brand.blue }]}>{actionTitle}</Text>
         </Pressable>
       )}
     </View>
@@ -54,5 +53,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 15,
+    fontWeight: '500',
   },
 });

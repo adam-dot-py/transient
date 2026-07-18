@@ -79,6 +79,55 @@ jest.mock('@/context/RoleContext', () => ({
   RoleProvider: ({ children }: any) => children,
 }));
 
+// Mock ProfileContext
+jest.mock('@/context/ProfileContext', () => ({
+  useProfile: () => ({
+    profile: { displayName: 'Test User', avatarUrl: null, genres: [], musicLinks: [], city: null, country: null },
+  }),
+}));
+
+// Mock ApplicationContext
+jest.mock('@/context/ApplicationContext', () => ({
+  useApplications: () => ({
+    getApplicationsForGig: jest.fn(() => []),
+  }),
+  ApplicationProvider: ({ children }: any) => children,
+}));
+
+// Mock GigPushContext
+jest.mock('@/context/GigPushContext', () => ({
+  useGigPush: () => ({
+    pushGig: jest.fn(),
+  }),
+}));
+
+// Mock useColorScheme
+jest.mock('@/hooks/useColorScheme', () => ({
+  useColorScheme: () => 'light',
+}));
+
+// Mock react-native-safe-area-context
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children, ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props}>{children}</View>;
+  },
+}));
+
+// Mock datetimepicker
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { View } = require('react-native');
+  return { __esModule: true, default: (props: any) => <View {...props} /> };
+});
+
+// Mock expo-image
+jest.mock('expo-image', () => ({
+  Image: ({ ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props} />;
+  },
+}));
+
 const mockRouterBack = jest.fn();
 const mockRouterPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -241,10 +290,10 @@ describe('Preservation Property: MusicianDashboard renders correctly', () => {
         getGigsByStatus: jest.fn().mockReturnValue(gigs.filter((g: Gig) => g.status === 'available')),
       };
 
-      const { getByText } = await render(<HomeScreen />);
+      const { getByText, queryByText } = await render(<HomeScreen />);
 
-      // SectionTitle "Home" must be present
-      expect(getByText('Home')).toBeTruthy();
+      // Home screen shows a greeting with user name
+      expect(queryByText(/Hi,.*!/)).toBeTruthy();
 
       // Filter chips (matching Figma: All, This Week, Next Week, This Month)
       expect(getByText('All')).toBeTruthy();
@@ -287,9 +336,9 @@ describe('Preservation Property: HosterDashboard renders Create Gig button', () 
       // Text content
       expect(getByText('+ Create Gig')).toBeTruthy();
 
-      // Press should navigate to /gig/create
+      // Press should navigate to /(tabs)/create
       fireEvent.press(createGigButton);
-      expect(mockRouterPush).toHaveBeenCalledWith('/gig/create');
+      expect(mockRouterPush).toHaveBeenCalledWith('/(tabs)/create');
     }
   );
 });

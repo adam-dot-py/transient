@@ -13,12 +13,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConfirmationBanner } from '@/components/ConfirmationBanner';
-import { Colors, SemanticColors, Spacing } from '@/constants/theme';
+import { GradientBorder } from '@/components/GradientBorder';
+import { Brand, Colors, SemanticColors, Spacing } from '@/constants/theme';
 import { useApplications } from '@/context/ApplicationContext';
 import { useGigs } from '@/context/GigContext';
 import { useRole } from '@/context/RoleContext';
 import { formatPay } from '@/data/gigService';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import type { ExampleSong } from '@/types';
+
+/** Mock example songs for demo — in production these come from the example_songs table */
+const MOCK_SONGS: ExampleSong[] = [
+  { id: 'song-1', title: 'Superstition', artist: 'Stevie Wonder', sortOrder: 1 },
+  { id: 'song-2', title: 'Ain\'t No Sunshine', artist: 'Bill Withers', sortOrder: 2 },
+  { id: 'song-3', title: 'Fly Me to the Moon', artist: 'Frank Sinatra', sortOrder: 3 },
+];
 
 /**
  * GigDetailScreen — Matches the Figma "Gig Overview Page".
@@ -44,8 +53,6 @@ export default function GigDetailScreen() {
   const applicationCount = id ? getApplicationsForGig(id).length : 0;
 
   const [accepted, setAccepted] = useState(false);
-  const [bannerVisible, setBannerVisible] = useState(false);
-
   useEffect(() => {
     if (gig) {
       addToRecentlyViewed(gig.id);
@@ -73,21 +80,10 @@ export default function GigDetailScreen() {
   const handleAcceptGig = () => {
     acceptGig(gig.id);
     setAccepted(true);
-    setBannerVisible(true);
-  };
-
-  const handleBannerDismiss = () => {
-    setBannerVisible(false);
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ConfirmationBanner
-        message="Gig accepted!"
-        visible={bannerVisible}
-        durationMs={3000}
-        onDismiss={handleBannerDismiss}
-      />
 
       <ScrollView
         style={styles.scrollView}
@@ -154,28 +150,81 @@ export default function GigDetailScreen() {
                 </View>
               ))}
             </View>
-
-            {/* Apply button */}
-            {!isAccepted && gig.status === 'available' && (
-              <Pressable
-                style={styles.applyButton}
-                onPress={handleAcceptGig}
-                accessibilityRole="button"
-                accessibilityLabel="Apply for this gig"
-              >
-                <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" />
-                <Text style={styles.applyButtonText}>Apply</Text>
-              </Pressable>
-            )}
-
-            {isAccepted && (
-              <View style={[styles.applyButton, styles.appliedButton]}>
-                <Ionicons name="checkmark-done" size={22} color="#FFFFFF" />
-                <Text style={styles.applyButtonText}>Applied</Text>
-              </View>
-            )}
           </View>
         </View>
+
+        {/* Details Section — Time & Location pills + Map */}
+        <View style={styles.detailsSection}>
+          {/* Date & Time pill */}
+          <View style={[styles.detailPill, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+            <View style={[styles.detailIconCircle, { backgroundColor: Brand.purple + '15' }]}>
+              <Ionicons name="calendar" size={16} color={Brand.purple} />
+            </View>
+            <View style={styles.detailPillContent}>
+              <Text style={[styles.detailPillLabel, { color: colors.textSecondary }]}>Date & Time</Text>
+              <Text style={[styles.detailPillValue, { color: colors.text }]}>
+                {gig.date}
+              </Text>
+              <Text style={[styles.detailPillSub, { color: colors.textSecondary }]}>
+                {gig.startTime} – {gig.endTime}
+              </Text>
+            </View>
+          </View>
+
+          {/* Location pill */}
+          <View style={[styles.detailPill, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+            <View style={[styles.detailIconCircle, { backgroundColor: Brand.blue + '15' }]}>
+              <Ionicons name="location" size={16} color={Brand.blue} />
+            </View>
+            <View style={styles.detailPillContent}>
+              <Text style={[styles.detailPillLabel, { color: colors.textSecondary }]}>Location</Text>
+              <Text style={[styles.detailPillValue, { color: colors.text }]}>
+                {gig.venueName}
+              </Text>
+              <Text style={[styles.detailPillSub, { color: colors.textSecondary }]}>
+                {gig.addressLine1}, {gig.city}
+              </Text>
+            </View>
+          </View>
+
+          {/* Map */}
+          <View style={styles.mapContainer}>
+            <MapPlaceholder latitude={gig.latitude} longitude={gig.longitude} colors={colors} />
+          </View>
+        </View>
+
+        {/* Genres Section */}
+        {gig.genres.length > 0 && (
+          <View style={styles.sectionBlock}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Genres</Text>
+            <View style={styles.brandPillRow}>
+              {gig.genres.map((genre) => (
+                <View key={genre} style={[styles.brandPill, { borderColor: Brand.purple + '50' }]}>
+                  <Text style={[styles.brandPillText, { color: Brand.purple }]}>
+                    {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Example Songs Section */}
+        {MOCK_SONGS.length > 0 && (
+          <View style={styles.sectionBlock}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Sample Songs</Text>
+            {MOCK_SONGS.map((song, index) => (
+              <View key={song.id} style={[styles.songRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.songIndex, { color: colors.textSecondary }]}>{index + 1}</Text>
+                <Ionicons name="musical-note" size={16} color={Brand.purple} />
+                <View style={styles.songInfo}>
+                  <Text style={[styles.songTitle, { color: colors.text }]}>{song.title}</Text>
+                  <Text style={[styles.songArtist, { color: colors.textSecondary }]}>{song.artist}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Description Section */}
         <View style={styles.descriptionSection}>
@@ -201,9 +250,75 @@ export default function GigDetailScreen() {
           <Text style={[styles.descriptionText, { color: colors.textSecondary }]}>
             {gig.description || 'No description provided for this gig.'}
           </Text>
+
+          {/* Apply button — full width, brand gradient, below description */}
+          {!isAccepted && gig.status === 'available' && !isHoster && (
+            <>
+              <Pressable
+                style={styles.applyButtonFull}
+                onPress={handleAcceptGig}
+                accessibilityRole="button"
+                accessibilityLabel="Apply for this gig"
+              >
+                <LinearGradient
+                  colors={[Brand.purple, Brand.blue, Brand.cyan]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.applyButtonGradient}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                  <Text style={styles.applyButtonFullText}>Apply for this Gig</Text>
+                </LinearGradient>
+              </Pressable>
+              <Text style={[styles.applyDisclaimer, { color: colors.textSecondary }]}>
+                Your profile, including your bio, genres, and music links, will be shared with the host for their consideration.
+              </Text>
+            </>
+          )}
+
+          {isAccepted && (
+            <View style={styles.appliedBanner}>
+              <Ionicons name="checkmark-done" size={20} color={Brand.purple} />
+              <Text style={[styles.appliedBannerText, { color: Brand.purple }]}>Applied</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+/**
+ * Map placeholder — shows a branded location card.
+ * react-native-maps requires a native dev client build and crashes in Expo Go,
+ * so we always show this styled placeholder in development.
+ */
+function MapPlaceholder({
+  latitude,
+  longitude,
+  colors,
+}: {
+  latitude: number;
+  longitude: number;
+  colors: typeof Colors.light;
+}) {
+  return (
+    <LinearGradient
+      colors={[Brand.purple + '15', Brand.blue + '10', Brand.cyan + '08']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.map}
+    >
+      <View style={styles.mapFallback}>
+        <Ionicons name="location" size={32} color={Brand.purple} />
+        <Text style={[styles.mapFallbackText, { color: colors.text }]}>
+          {latitude.toFixed(4)}, {longitude.toFixed(4)}
+        </Text>
+        <Text style={[styles.mapFallbackSub, { color: colors.textSecondary }]}>
+          Map available in production build
+        </Text>
+      </View>
+    </LinearGradient>
   );
 }
 
@@ -327,7 +442,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   applyButton: {
-    backgroundColor: '#38B5D7',
+    backgroundColor: Brand.purple,
     borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -347,6 +462,46 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 20,
   },
+  applyButtonFull: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginTop: Spacing.four,
+  },
+  applyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 14,
+  },
+  applyButtonFullText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  applyDisclaimer: {
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: Spacing.two,
+    paddingHorizontal: Spacing.two,
+  },
+  appliedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: Spacing.four,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Brand.purple,
+  },
+  appliedBannerText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
   descriptionSection: {
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.four,
@@ -359,8 +514,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.two,
   },
   viewApplicationsButton: {
-    backgroundColor: '#38B5D7',
-    borderRadius: 8,
+    backgroundColor: Brand.purple,
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
@@ -376,9 +531,120 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   descriptionText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '500',
-    lineHeight: 26,
+    lineHeight: 24,
+  },
+  // ─── Details Section (Date/Time, Location, Map) ────────────────────────
+  detailsSection: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.four,
+    gap: 12,
+  },
+  detailPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  detailIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailPillContent: {
+    flex: 1,
+  },
+  detailPillLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  detailPillValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  detailPillSub: {
+    fontSize: 13,
+    marginTop: 1,
+  },
+  mapContainer: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  map: {
+    height: 160,
+    width: '100%',
+    borderRadius: 14,
+  },
+  mapFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  mapFallbackText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  mapFallbackSub: {
+    fontSize: 11,
+  },
+  // ─── Genres & Songs Sections ───────────────────────────────────────────
+  sectionBlock: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.four,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: Spacing.two,
+  },
+  brandPillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  brandPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  brandPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  songRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  songIndex: {
+    width: 22,
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  songInfo: {
+    flex: 1,
+  },
+  songTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  songArtist: {
+    fontSize: 13,
+    marginTop: 1,
   },
   notFoundContainer: {
     flex: 1,
@@ -392,7 +658,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.four,
   },
   backButton: {
-    backgroundColor: '#38B5D7',
+    backgroundColor: Brand.purple,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.four,
     borderRadius: 8,

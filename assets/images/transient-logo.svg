@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" fill="none">
+  <defs>
+    <linearGradient id="brandGrad" x1="0" y1="200" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="speedGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.85"/>
+    </linearGradient>
+    <!-- Tagline underline gradient: cyan → magenta -->
+    <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#06B6D4"/>
+      <stop offset="100%" stop-color="#D946EF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- === T-Note Icon (left side, scaled to fit 200x200 area) === -->
+  <g transform="translate(10, 10) scale(0.35)">
+    <!-- T crossbar -->
+    <rect x="80" y="72" width="340" height="64" rx="32" fill="url(#brandGrad)"/>
+    <!-- T stem flowing into note stem -->
+    <path d="M256 136 h40 v260 c0 8-4 16-12 22 c-20 16-56 28-92 28 c-40 0-64-18-64-46 c0-28 26-50 66-50 c22 0 42 6 56 16 V136 Z" fill="url(#brandGrad)"/>
+    <!-- Note head -->
+    <ellipse cx="198" cy="420" rx="52" ry="36" transform="rotate(-15 198 420)" fill="url(#brandGrad)"/>
+    <!-- Speed lines -->
+    <rect x="24" y="82" width="48" height="12" rx="6" fill="url(#speedGrad)"/>
+    <rect x="36" y="102" width="36" height="12" rx="6" fill="url(#speedGrad)"/>
+    <rect x="28" y="122" width="44" height="12" rx="6" fill="url(#speedGrad)"/>
+  </g>
+
+  <!-- === TRANSIENT wordmark === -->
+  <text x="210" y="105" font-family="system-ui, -apple-system, 'SF Pro Display', sans-serif" font-size="52" font-weight="300" letter-spacing="12" fill="#1A1A2E">
+    TRANSIENT
+  </text>
+
+  <!-- === Tagline underline (gradient bar) === -->
+  <rect x="210" y="125" width="540" height="3" rx="1.5" fill="url(#lineGrad)"/>
+
+  <!-- === Tagline text === -->
+  <text x="210" y="155" font-family="system-ui, -apple-system, 'SF Pro Display', sans-serif" font-size="16" font-weight="400" letter-spacing="3" fill="#6B7280">
+    CONNECTING ARTISTS. VENUES. MOMENTS.
+  </text>
+</svg>

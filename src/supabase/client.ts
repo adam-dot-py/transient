@@ -86,19 +86,24 @@ function createClient() {
     return null;
   }
 
-  // Dynamic import to avoid hard failure when @supabase/supabase-js isn't installed
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+  // @supabase/supabase-js must be installed for this to work.
+  // In development (mock mode), config will be null so we never reach here.
+  // When moving to test/production, install the package:
+  //   npm install @supabase/supabase-js
+  //
+  // Then uncomment the block below:
+  //
+  // const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+  // return createSupabaseClient<Database>(config.url, config.anonKey, {
+  //   auth: {
+  //     autoRefreshToken: true,
+  //     persistSession: true,
+  //     detectSessionInUrl: false,
+  //   },
+  // });
 
-  return createSupabaseClient<Database>(config.url, config.anonKey, {
-    auth: {
-      // Use AsyncStorage for persisting auth sessions across app restarts
-      // storage: AsyncStorage, // Uncomment when @react-native-async-storage is configured for Supabase
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false, // Disable for React Native (handled via deep links)
-    },
-  });
+  // Fallback: package not installed yet
+  return null;
 }
 
 // ─── Exported Client ─────────────────────────────────────────────────────────

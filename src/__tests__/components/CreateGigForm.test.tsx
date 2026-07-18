@@ -44,6 +44,55 @@ jest.mock('@/context/GigContext', () => ({
   }),
 }));
 
+// Mock GigPushContext
+jest.mock('@/context/GigPushContext', () => ({
+  useGigPush: () => ({
+    pushGig: jest.fn(),
+  }),
+}));
+
+// Mock ProfileContext
+jest.mock('@/context/ProfileContext', () => ({
+  useProfile: () => ({
+    profile: { displayName: 'Test', avatarUrl: null, genres: [], musicLinks: [] },
+  }),
+}));
+
+// Mock useColorScheme
+jest.mock('@/hooks/useColorScheme', () => ({
+  useColorScheme: () => 'light',
+}));
+
+// Mock datetimepicker
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { View } = require('react-native');
+  return { __esModule: true, default: (props: any) => <View {...props} /> };
+});
+
+// Mock expo-linear-gradient
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: ({ children, ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props}>{children}</View>;
+  },
+}));
+
+// Mock expo-image
+jest.mock('expo-image', () => ({
+  Image: ({ ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props} />;
+  },
+}));
+
+// Mock @expo/vector-icons
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: ({ name, ...props }: any) => {
+    const { Text } = require('react-native');
+    return <Text {...props}>{name}</Text>;
+  },
+}));
+
 // ─── Address Field Rendering Tests ───────────────────────────────────────────
 
 describe('CreateGigScreen — address field rendering', () => {
