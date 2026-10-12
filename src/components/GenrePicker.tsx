@@ -146,7 +146,7 @@ export default function GenrePicker({
             }}
             ListEmptyComponent={
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                No genres match "{search}"
+                No genres match &ldquo;{search}&rdquo;
               </Text>
             }
           />

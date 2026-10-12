@@ -99,13 +99,10 @@ jest.mock('@/hooks/useColorScheme', () => ({
   useColorScheme: () => 'light',
 }));
 
-// Mock react-native-safe-area-context
-jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({ children, ...props }: any) => {
-    const { View } = require('react-native');
-    return <View {...props}>{children}</View>;
-  },
-}));
+// NOTE: react-native-safe-area-context is intentionally NOT mocked here.
+// Test 1b asserts the Explore root renders as the real "RNCSafeAreaView"; mocking
+// it to a plain View would make that assertion impossible to satisfy. The real
+// provider works in the test renderer without additional setup.
 
 // Mock datetimepicker
 jest.mock('@react-native-community/datetimepicker', () => {

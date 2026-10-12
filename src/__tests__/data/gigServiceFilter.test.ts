@@ -45,6 +45,22 @@ function dateStr(offset: number): string {
   return d.toISOString().split('T')[0];
 }
 
+/**
+ * Format a Date as a LOCAL YYYY-MM-DD string.
+ *
+ * `filterGigsByTimeRange` and `getStartOfWeek` operate in local time, so test
+ * fixtures must build their expected dates in local time too. Using
+ * `toISOString()` (which is UTC) shifts the date by a day in any timezone behind
+ * UTC on some weekdays, which previously made the week-range tests flaky
+ * depending on the day they ran.
+ */
+function localDateStr(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ─── getStartOfWeek ──────────────────────────────────────────────────────────
 
 describe('getStartOfWeek', () => {
@@ -124,13 +140,13 @@ describe('filterGigsByTimeRange', () => {
       for (let i = 0; i < 7; i++) {
         const d = new Date(startOfWeek);
         d.setDate(d.getDate() + i);
-        weekGigs.push(makeGig(d.toISOString().split('T')[0]));
+        weekGigs.push(makeGig(localDateStr(d)));
       }
 
       // Add a gig outside this week
       const outsideGig = new Date(startOfWeek);
       outsideGig.setDate(outsideGig.getDate() + 7);
-      weekGigs.push(makeGig(outsideGig.toISOString().split('T')[0]));
+      weekGigs.push(makeGig(localDateStr(outsideGig)));
 
       const result = filterGigsByTimeRange(weekGigs, 'thisWeek');
       expect(result).toHaveLength(7);
@@ -150,13 +166,13 @@ describe('filterGigsByTimeRange', () => {
       for (let i = 0; i < 7; i++) {
         const d = new Date(nextMonday);
         d.setDate(d.getDate() + i);
-        nextWeekGigs.push(makeGig(d.toISOString().split('T')[0]));
+        nextWeekGigs.push(makeGig(localDateStr(d)));
       }
 
       // Add a gig two weeks from now (should be excluded)
       const twoWeeksOut = new Date(nextMonday);
       twoWeeksOut.setDate(twoWeeksOut.getDate() + 7);
-      nextWeekGigs.push(makeGig(twoWeeksOut.toISOString().split('T')[0]));
+      nextWeekGigs.push(makeGig(localDateStr(twoWeeksOut)));
 
       const result = filterGigsByTimeRange(nextWeekGigs, 'nextWeek');
       expect(result).toHaveLength(7);

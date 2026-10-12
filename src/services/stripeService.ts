@@ -29,6 +29,26 @@
 
 import { supabase } from '@/supabase/client';
 
+/**
+ * Minimal structural view of the Supabase client's Edge Functions API.
+ *
+ * `supabase` from the client module is typed as `null` until the real
+ * @supabase/supabase-js client is wired in (see client.ts). After the runtime
+ * `if (!supabase)` guard, TypeScript narrows the remaining type to `never`,
+ * which is why `supabase.functions` errored. We narrow through this structural
+ * type at each call site so the Edge Function calls type-check without the
+ * package being installed yet. Mirrors the RPC-client narrowing in
+ * `src/data/searchService.ts`.
+ */
+interface SupabaseFunctionsClient {
+  functions: {
+    invoke(
+      name: string,
+      options?: { body?: unknown }
+    ): Promise<{ data: unknown; error: { message?: string } | null }>;
+  };
+}
+
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 export const AMPLIFY_CONFIG = {
@@ -73,7 +93,8 @@ export async function createAmplifyPaymentIntent(
     };
   }
 
-  const { data, error } = await supabase.functions.invoke(
+  const client = supabase as unknown as SupabaseFunctionsClient;
+  const { data, error } = await client.functions.invoke(
     'create-amplify-payment-intent',
     {
       body: {
@@ -106,7 +127,8 @@ export async function recordAmplifyPayment(params: {
     return;
   }
 
-  const { error } = await supabase.functions.invoke('record-amplify-payment', {
+  const client = supabase as unknown as SupabaseFunctionsClient;
+  const { error } = await client.functions.invoke('record-amplify-payment', {
     body: params,
   });
 

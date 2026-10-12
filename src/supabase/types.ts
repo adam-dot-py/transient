@@ -140,6 +140,17 @@ export interface GigUpdate {
   accepted_musician_ids?: string[];
 }
 
+/**
+ * Row returned by the `search_gigs` RPC: the full gig row shape plus the
+ * computed distance from the caller-supplied origin, in MILES.
+ *
+ * `distance_miles` is `null` when the gig has no/zero/out-of-range coordinates
+ * (NULL `location`), mirroring the client's `isValidCoordinate` semantics.
+ */
+export interface SearchGigRow extends GigRow {
+  distance_miles: number | null;
+}
+
 export interface ExampleSongRow {
   id: string;
   gig_id: string;
@@ -313,6 +324,21 @@ export interface Database {
         Row: AmplifyPaymentRow;
         Insert: AmplifyPaymentInsert;
         Update: AmplifyPaymentUpdate;
+      };
+    };
+    Functions: {
+      search_gigs: {
+        Args: {
+          p_user_lat: number;
+          p_user_lng: number;
+          p_query: string | null;
+          p_genres: string[] | null;
+          p_min_pay: number | null;
+          p_max_pay: number | null;
+          p_max_distance_miles: number | null;
+          p_sort_by: string;
+        };
+        Returns: SearchGigRow[];
       };
     };
   };

@@ -1,0 +1,79 @@
+{
+  "name": "search-gigs",
+  "description": "Feature pipeline for the Explore gig search/filter/sort feature: design, implement with tests, independent review loop, and final validation. User story: AS A musician user, I WANT to search for available gigs by text, genre, pay range, and distance from my position, and sort the results, SO THAT I can find and apply for the right gig.",
+  "inputs": {
+    "task": "prompt"
+  },
+  "steps": [
+    {
+      "type": "step",
+      "id": "design",
+      "agent": "wf-planner",
+      "prompt": "You are designing a feature for the Transient app (Expo + React Native + TypeScript, file-based Expo Router, mock-first data). Do NOT edit files; produce a design only.\n\nFeature request from the user: {{task}}\n\nContext you must honor (read these files to confirm before designing):\n- Screen to change: src/app/(tabs)/explore.tsx. Today its SearchBar props are hardcoded (\"Nashville, TN\"), the Filter and Sort chips (local FilterSortChip component) have NO onPress logic, the list shows availableGigs.slice(0,4) with FAKE distance/rating derived from the array index, and no searching/filtering/sorting happens.\n- Data: src/data/mockGigs.ts exports MOCK_GIGS (real lat/lng near Nashville) and MOCK_USER_LOCATION. src/data/genres.ts exports ALL_GENRES and GENRE_LABELS. There is NO existing distance/haversine helper anywhere in src/.\n- Types: src/types/index.ts (Gig, Genre, GigFilter, MapRegion). Pure service pattern lives in src/data/gigService.ts (pure, immutable, well-tested). Tests use Jest + @testing-library/react-native + fast-check under src/__tests__/.\n- Theme/components: src/constants/theme.ts (Brand, Colors, Spacing). Reusable src/components/FilterChip.tsx exists (purple active state). SearchBar at src/components/SearchBar.tsx, GigListingCard at src/components/GigListingCard.tsx accepts a `distance` string prop.\n\nDesign scope (keep tight, match existing conventions):\n1. A new PURE module src/data/searchService.ts: getDistanceMiles(from,to) via Haversine; a SearchCriteria type { query, genres: Genre[], minPay?, maxPay?, maxDistanceMiles?, sortBy }; sortBy one of 'distance' | 'payHighToLow' | 'payLowToHigh' | 'dateSoonest'; and searchGigs(gigs, userLocation, criteria) that filters by case-insensitive text (title/venue/city), genre overlap, pay range, radius, then sorts. All pure, no mutation.\n2. Wire explore.tsx to real state: compute real per-gig distance, feed real distance into GigListingCard, show real result count, remove index-based fakery.\n3. A Filter bottom-sheet (genre multi-select reusing FilterChip; pay min/max; distance radius options 5/10/15/25 miles to mirror AMPLIFY_CONFIG.radiusOptions) and a Sort menu (single-select of the four sort options), both wired to the dead chips.\n4. Make SearchBar accept a text query and reflect active criteria.\n\nOut of scope: ratings/reviews stay as-is (no rating data in the model); keep the dev loop mock-data driven.\n\nBACKEND ARCHITECTURE (REQUIRED - the project owner is a senior data engineer; new features MUST map cleanly to the Supabase Postgres backend, not just the client). Read src/supabase/schema.sql, src/supabase/types.ts, and BACKEND_SETUP.md first. The gigs table already has title/venue_name/city (text), genres (text[]), pay (integer), latitude/longitude (double precision), but there is NO PostGIS extension, NO spatial column, and NO spatial index (only idx_gigs_hoster_id/status/date), so radius search would be a full-table scan. Your design MUST include:\n1. A new idempotent, additive SQL migration under src/supabase/ (e.g. src/supabase/migrations/) that enables PostGIS (CREATE EXTENSION IF NOT EXISTS postgis), adds a geography(Point,4326) location column populated from lat/lng, adds a GIST index on location, and a GIN index on genres for array-overlap filtering, without breaking existing RLS.\n2. A Postgres RPC function search_gigs(...) (SECURITY INVOKER so the existing gigs RLS SELECT policy still applies) accepting text query, genres, min/max pay, user lat/lng, radius miles and a sort mode; using ST_DWithin for the radius predicate and ST_Distance for the distance sort; returning gig rows plus a computed distance_miles. Heavy filtering/sorting stays in the database.\n3. The TS mapping: searchService.ts calls supabase.rpc search_gigs when a client is configured and falls back to the in-memory pure Haversine filter when supabase is null (mirror the mock-first pattern in src/services/stripeService.ts and src/supabase/client.ts). Define the snake_case row to camelCase domain mapping and update src/supabase/types.ts if a new return shape is needed.\nDo NOT run the migration against any real database; it is a committed artifact for the test/prod flow in BACKEND_SETUP.md.\n\nWrite the technical design (files to add/change, the exact SearchCriteria/sort contract, the filtering+sorting algorithm, edge cases such as zero-coordinate gigs and empty results, and the test plan listing concrete unit + property tests) to .kiro/workflow-output/search-gigs-design.md. End with send_message severity success and a one-paragraph summary.",
+      "artifacts": {
+        "design": ".kiro/workflow-output/search-gigs-design.md"
+      }
+    },
+    {
+      "type": "repeat",
+      "id": "implementation-loop",
+      "maxIterations": 3,
+      "onMaxIterations": "pause",
+      "stopCondition": {
+        "fileCheck": {
+          "path": ".kiro/workflow-output/search-gigs-status.json",
+          "jsonPath": "complete",
+          "value": true
+        }
+      },
+      "steps": [
+        {
+          "type": "step",
+          "id": "implement",
+          "agent": "wf-coder",
+          "prompt": "Implement the Explore gig search/filter/sort feature for the Transient app according to this design, following the repo's existing conventions (pure service layer + StyleSheet UI + @/ path aliases, default exports for screens).\n\nDesign:\n{{artifacts.design}}\n\nAggregated status + review feedback from the previous iteration is in the status file {{artifacts.status}} (its \"notes\" field; this file does not exist yet on the first pass, so treat a missing file as a fresh start).\n\nRequirements:\n- Add src/data/searchService.ts (pure functions only) and its tests under src/__tests__/data/ and/or src/__tests__/properties/ using Jest + fast-check, matching existing test style.\n- Update src/app/(tabs)/explore.tsx to use real search/filter/sort state and real distances; remove the index-based fake distance/rating math.\n- Add the Filter sheet and Sort menu, wiring the currently dead chips. Reuse src/components/FilterChip.tsx and theme tokens.\n- Backend (REQUIRED): add the SQL migration (PostGIS + location geography column + GIST index + genres GIN index) and the search_gigs RPC function under src/supabase/ exactly as the design specifies; update src/supabase/types.ts for any new return shape. searchService.ts must call supabase.rpc when a client exists and fall back to the pure in-memory Haversine filter when supabase is null (mock-first). Do NOT execute the migration against any live database.\n\nAfter implementing, run: npx tsc --noEmit (the new/changed files must not add type errors) and npx jest for the new/affected tests. Then write .kiro/workflow-output/search-gigs-status.json with fields: { \"complete\": false, \"iteration\": <n>, \"typecheckClean\": <bool for the feature files>, \"testsPassing\": <bool>, \"filesChanged\": [paths], \"notes\": \"...\" }. Set complete only in the aggregate step, not here. Finish with send_message severity success summarizing what you built and the test results.",
+          "artifacts": {
+            "status": ".kiro/workflow-output/search-gigs-status.json"
+          }
+        },
+        {
+          "type": "parallel",
+          "id": "reviews",
+          "joinPolicy": "allSettled",
+          "branches": [
+            {
+              "type": "step",
+              "id": "review-logic",
+              "agent": "semantic_reviewer",
+              "prompt": "Independently review ONLY the search/filter/sort implementation just made (src/data/searchService.ts and src/app/(tabs)/explore.tsx). Focus on logic correctness: Haversine distance accuracy and units (miles), case-insensitive text matching across title/venue/city, genre overlap semantics, inclusive/exclusive pay-range bounds, radius filtering, sort stability and correctness for all four sort modes, and handling of zero/invalid coordinates and empty-result states. Verify functions are pure (no mutation of inputs). Report concrete findings as PASS or a specific list of required changes. Be precise about file and line."
+            },
+            {
+              "type": "step",
+              "id": "review-tests-ux",
+              "agent": "semantic_reviewer",
+              "prompt": "Independently review ONLY the tests and UI wiring for the search/filter/sort feature. Check: tests actually cover filtering by text/genre/pay/distance and all sort modes plus edge cases (empty query, no matches, zero-coordinate gig); tests follow the repo's Jest + fast-check conventions; the Filter sheet and Sort menu are wired to real state and update the result count; SearchBar reflects the active query; the index-based fake distance/rating math has been removed; accessibility labels/roles are present on new interactive elements. Report PASS or a specific list of required changes with file and line."
+            }
+          ]
+        },
+        {
+          "type": "step",
+          "id": "aggregate",
+          "agent": "wf-coder",
+          "prompt": "You are closing out one iteration of the search/filter/sort feature loop.\n\nLogic review:\n{{review-logic.output}}\n\nTests + UX review:\n{{review-tests-ux.output}}\n\nIf both reviews are PASS and typecheck + tests are green: apply no further changes, then overwrite .kiro/workflow-output/search-gigs-status.json setting \"complete\": true and keep the other fields accurate. If either review requires changes: apply the safe, in-scope fixes now, re-run npx tsc --noEmit and npx jest for the affected files, and overwrite the status file with \"complete\": false plus a \"notes\" field that lists exactly what still needs doing for the next iteration. Finish with send_message severity success and a short status (COMPLETE or NEEDS ANOTHER ITERATION with reasons).",
+          "artifacts": {
+            "status": ".kiro/workflow-output/search-gigs-status.json"
+          }
+        }
+      ]
+    },
+    {
+      "type": "step",
+      "id": "validate",
+      "agent": "wf-coder",
+      "prompt": "Final validation gate for the Explore search/filter/sort feature. Do not add new features. Run, in the repo root:\n1. npx tsc --noEmit  (confirm the feature files src/data/searchService.ts and src/app/(tabs)/explore.tsx introduce no new type errors; note any pre-existing unrelated errors separately).\n2. npx jest for the search feature test files.\n3. npx expo export --platform web --output-dir /tmp/search-gigs-verify  (confirm the app still bundles).\n\nThen write a concise go/no-go report to .kiro/workflow-output/search-gigs-validation.md covering: the user story acceptance (search by text, genre, pay, distance; sort works; results + count update), command results, files changed, and anything still open. Finish with send_message severity success if the feature meets the user story and the app bundles, otherwise severity error with the blocking reasons.",
+      "artifacts": {
+        "report": ".kiro/workflow-output/search-gigs-validation.md"
+      }
+    }
+  ]
+}

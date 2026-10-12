@@ -38,6 +38,9 @@ export function RoleToggle() {
 
   const handleExpand = useCallback(() => {
     setExpanded(true);
+    // Reanimated shared-value write — the correct API; the React Compiler
+    // immutability rule is a false positive for shared values.
+    // eslint-disable-next-line react-hooks/immutability
     width.value = withTiming(EXPANDED_WIDTH, { duration: 250 });
   }, [width]);
 
@@ -46,6 +49,8 @@ export function RoleToggle() {
       switchRole();
     }
     setExpanded(false);
+    // Reanimated shared-value write (see note above).
+    // eslint-disable-next-line react-hooks/immutability
     width.value = withTiming(COLLAPSED_SIZE, { duration: 200 });
   }, [role, switchRole, width]);
 

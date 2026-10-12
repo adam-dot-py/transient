@@ -8,14 +8,17 @@
     "scheme": "transient",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/transient-icon.svg"
+      "icon": "./assets/images/transient-icon.svg",
+      "bundleIdentifier": "com.adamdotpy.transient"
     },
     "android": {
+      "package": "com.adamdotpy.transient",
       "adaptiveIcon": {
         "backgroundColor": "#1A1A2E",
         "foregroundImage": "./assets/images/transient-icon.svg"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     },
     "web": {
       "output": "static",
@@ -33,7 +36,13 @@
       ],
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Transient uses your location to show gigs near you."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

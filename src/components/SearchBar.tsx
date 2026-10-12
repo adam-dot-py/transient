@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -9,17 +9,90 @@ interface SearchBarProps {
   dateRange: string;
   genre: string;
   onPress?: () => void;
+  /**
+   * When provided, the bar becomes an editable text search driving the query.
+   * `value` reflects the current query; `onChangeText` writes it back.
+   */
+  value?: string;
+  onChangeText?: (text: string) => void;
+  /** Placeholder for the editable variant. */
+  placeholder?: string;
+  /** Called when the trailing options icon is pressed (e.g. open filters). */
+  onOptionsPress?: () => void;
+  /** Called when the location label is pressed (opens the location picker). */
+  onLocationPress?: () => void;
 }
 
 /**
  * SearchBar — Matches the Figma "Search" component.
  *
- * A non-editable search display showing current location, date range,
- * and genre filter with separator dots. Tapping opens the search modal.
+ * Two modes:
+ * - Display (default): a non-editable summary of location / date / genre.
+ *   Tapping fires `onPress`.
+ * - Editable: when `onChangeText` is provided, renders a `TextInput` bound to
+ *   `value` so the top bar directly drives the search query.
  */
-export function SearchBar({ location, dateRange, genre, onPress }: SearchBarProps) {
+export function SearchBar({
+  location,
+  dateRange,
+  genre,
+  onPress,
+  value,
+  onChangeText,
+  placeholder = 'Search gigs, venues, cities',
+  onOptionsPress,
+  onLocationPress,
+}: SearchBarProps) {
   const scheme = useColorScheme();
   const colors = Colors[scheme];
+
+  const editable = typeof onChangeText === 'function';
+
+  if (editable) {
+    return (
+      <View
+        style={[styles.container, { backgroundColor: colors.backgroundElement }]}
+      >
+        <Ionicons name="search" size={24} color={colors.text} />
+        <View style={styles.textContainer}>
+          <Pressable
+            onPress={onLocationPress}
+            accessibilityRole="button"
+            accessibilityLabel={`Change location, currently ${location}`}
+            style={styles.locationRow}
+            hitSlop={6}
+          >
+            <Ionicons name="location-outline" size={14} color={colors.text} />
+            <Text
+              style={[styles.locationText, { color: colors.text }]}
+              numberOfLines={1}
+            >
+              {location}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
+          </Pressable>
+          <TextInput
+            style={[styles.input, { color: colors.textSecondary }]}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor={colors.textSecondary}
+            returnKeyType="search"
+            autoCorrect={false}
+            accessibilityLabel="Search gigs"
+          />
+        </View>
+        <Pressable
+          onPress={onOptionsPress}
+          accessibilityRole="button"
+          accessibilityLabel="Open filters"
+          hitSlop={8}
+        >
+          <Ionicons name="options-outline" size={24} color={colors.text} />
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <Pressable
@@ -68,6 +141,16 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
     gap: 2,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  input: {
+    fontSize: 14,
+    lineHeight: 22,
+    padding: 0,
   },
   locationText: {
     fontSize: 16,

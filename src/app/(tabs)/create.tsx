@@ -336,7 +336,7 @@ export default function CreateScreen() {
           />
           {renderError('venueName')}
 
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Address Line 1</Text>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Address Line 1 *</Text>
           <TextInput
             style={[
               styles.input,
@@ -346,7 +346,8 @@ export default function CreateScreen() {
             onChangeText={setAddressLine1}
             placeholder="Street address"
             placeholderTextColor={colors.textSecondary}
-            accessibilityLabel="Address line 1"
+            maxLength={100}
+            accessibilityLabel="Address Line 1"
           />
           {renderError('addressLine1')}
 
@@ -362,11 +363,12 @@ export default function CreateScreen() {
             onChangeText={setAddressLine2}
             placeholder="Apt, suite, floor..."
             placeholderTextColor={colors.textSecondary}
-            accessibilityLabel="Address line 2"
+            maxLength={100}
+            accessibilityLabel="Address Line 2"
           />
           {renderError('addressLine2')}
 
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>City</Text>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>City *</Text>
           <TextInput
             style={[
               styles.input,
@@ -376,11 +378,12 @@ export default function CreateScreen() {
             onChangeText={setCity}
             placeholder="City"
             placeholderTextColor={colors.textSecondary}
+            maxLength={50}
             accessibilityLabel="City"
           />
           {renderError('city')}
 
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Postcode</Text>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Postcode *</Text>
           <TextInput
             style={[
               styles.input,
@@ -390,11 +393,12 @@ export default function CreateScreen() {
             onChangeText={setPostcode}
             placeholder="Postcode"
             placeholderTextColor={colors.textSecondary}
+            maxLength={15}
             accessibilityLabel="Postcode"
           />
           {renderError('postcode')}
 
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Country</Text>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Country *</Text>
           <TextInput
             style={[
               styles.input,
@@ -404,6 +408,7 @@ export default function CreateScreen() {
             onChangeText={setCountry}
             placeholder="Country"
             placeholderTextColor={colors.textSecondary}
+            maxLength={60}
             accessibilityLabel="Country"
           />
           {renderError('country')}

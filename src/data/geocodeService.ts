@@ -24,14 +24,79 @@ export interface GeocodingResult {
   formattedAddress: string;
 }
 
-/** Fixed coordinate lookup by city name (UK cities) */
+/** Fixed coordinate lookup by city name.
+ *
+ * Nashville-area US cities are the primary set so manual location entry
+ * visibly changes which gigs are "near" the user (the mock gigs live around
+ * Nashville). A few UK cities are retained for the gig-creation geocode path.
+ */
 const CITY_COORDINATES: Record<string, { latitude: number; longitude: number }> = {
+  // ─── Nashville, TN area (matches MOCK_GIGS) ───────────────────────────────
+  nashville: { latitude: 36.1627, longitude: -86.7816 },
+  franklin: { latitude: 35.9251, longitude: -86.8689 },
+  murfreesboro: { latitude: 35.8456, longitude: -86.3903 },
+  brentwood: { latitude: 36.0331, longitude: -86.7828 },
+  hendersonville: { latitude: 36.3048, longitude: -86.6200 },
+  'mount juliet': { latitude: 36.2003, longitude: -86.5186 },
+  // ─── Other Tennessee / nearby US cities ───────────────────────────────────
+  memphis: { latitude: 35.1495, longitude: -90.049 },
+  knoxville: { latitude: 35.9606, longitude: -83.9207 },
+  chattanooga: { latitude: 35.0456, longitude: -85.3097 },
+  // ─── UK cities (legacy, used by gig-creation geocode) ─────────────────────
   london: { latitude: 51.5074, longitude: -0.1278 },
   manchester: { latitude: 53.4808, longitude: -2.2426 },
   bristol: { latitude: 51.4545, longitude: -2.5879 },
 };
 
-const DEFAULT_COORDINATES = { latitude: 51.5074, longitude: -0.1278 };
+const DEFAULT_COORDINATES = { latitude: 36.1627, longitude: -86.7816 };
+
+/**
+ * Pure city-name → coordinates lookup against the mock table.
+ *
+ * Case-insensitive and whitespace-trimmed. Returns null for an empty string or
+ * an unknown city (callers decide how to handle a miss, e.g. keep the current
+ * location). Pure and synchronous so it is trivial to unit/property test; the
+ * async {@link geocodeCity} wrapper simulates network latency for the UI.
+ */
+export function lookupCityCoordinates(
+  city: string
+): { latitude: number; longitude: number } | null {
+  const key = city.trim().toLowerCase();
+  if (key.length === 0) {
+    return null;
+  }
+  return CITY_COORDINATES[key] ?? null;
+}
+
+/**
+ * Geocodes a city name into a {@link GeocodingResult}, mimicking an async API.
+ *
+ * Mock implementation backed by {@link lookupCityCoordinates}. Returns null when
+ * the city is empty or unknown so the caller can surface "city not found" rather
+ * than silently snapping to a default.
+ */
+export async function geocodeCity(city: string): Promise<GeocodingResult | null> {
+  const coords = lookupCityCoordinates(city);
+  if (!coords) {
+    return null;
+  }
+
+  // Simulate async API delay
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  // Title-case the input for a tidy display label.
+  const formattedAddress = city
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+
+  return {
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    formattedAddress,
+  };
+}
 
 /**
  * Geocodes a structured address into latitude/longitude coordinates.

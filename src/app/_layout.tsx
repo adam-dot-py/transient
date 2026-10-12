@@ -54,11 +54,15 @@ function ApplicationWithNotifications({ children }: { children: React.ReactNode 
   const { addNotification } = useNotificationContext();
   const { getGigById } = useGigs();
 
-  // Use refs to avoid stale closures in the callback
+  // Use refs to avoid stale closures in the callback.
+  // Assign in an effect (not during render) to satisfy the refs-in-render rule.
   const addNotificationRef = useRef(addNotification);
-  addNotificationRef.current = addNotification;
   const getGigByIdRef = useRef(getGigById);
-  getGigByIdRef.current = getGigById;
+
+  useEffect(() => {
+    addNotificationRef.current = addNotification;
+    getGigByIdRef.current = getGigById;
+  }, [addNotification, getGigById]);
 
   const handleApplicationStatusChange = useCallback(
     (event: ApplicationStatusChangeEvent) => {

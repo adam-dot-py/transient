@@ -41,7 +41,26 @@ export const Colors = {
     border: '#2E2E42',
     cardBackground: '#161625',
   },
-} as const;
+} satisfies Record<'light' | 'dark', ThemePalette>;
+
+/**
+ * Shape of a single color palette (light or dark).
+ *
+ * Declared with `string` values (not `as const` literals) so that `Colors.light`
+ * and `Colors.dark` share ONE identical type. Without this, `as const` gave each
+ * palette distinct literal types and `Colors[scheme]` became a union TypeScript
+ * could not assign to a single-palette-shaped target (the TS2322 errors across
+ * profile / gig / settings screens).
+ */
+export interface ThemePalette {
+  text: string;
+  background: string;
+  backgroundElement: string;
+  backgroundSelected: string;
+  textSecondary: string;
+  border: string;
+  cardBackground: string;
+}
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 

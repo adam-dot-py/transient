@@ -178,8 +178,10 @@ describe('GigDetail — renders price badge', () => {
 
 describe('GigDetail — renders genre pill', () => {
   it('renders the genre capitalized in a pill', async () => {
-    const { getByText } = await render(<GigDetailScreen />);
-    expect(getByText('Jazz')).toBeTruthy();
+    const { getAllByText } = await render(<GigDetailScreen />);
+    // The capitalized genre appears in both the hero overlay pill and the
+    // dedicated Genres detail section — both are intended.
+    expect(getAllByText('Jazz').length).toBeGreaterThanOrEqual(1);
   });
 });
 

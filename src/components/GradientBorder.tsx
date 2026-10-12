@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   inner: {
     flex: 1,

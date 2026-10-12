@@ -225,8 +225,8 @@ describe('Preservation Property: GigDetailScreen renders gig fields correctly', 
 
       const { getByText, queryByText, getAllByText } = await render(<GigDetailScreen />);
 
-      // Venue name in overlay
-      expect(getByText(gig.venueName)).toBeTruthy();
+      // Venue name — appears in both the hero overlay and the details section.
+      expect(getAllByText(gig.venueName).length).toBeGreaterThan(0);
 
       // Genre (capitalized) in pill — check first genre
       const capitalizedGenre = gig.genres[0].charAt(0).toUpperCase() + gig.genres[0].slice(1);

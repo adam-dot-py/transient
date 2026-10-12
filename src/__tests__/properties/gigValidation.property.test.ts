@@ -75,8 +75,8 @@ describe('Property 10: Gig Creation Multi-Genre Validation', () => {
 
   it('validation fails with genre error when genres array is empty', () => {
     fc.assert(
-      fc.property(fc.constant([]), (genres) => {
-        const input = { ...validBaseInput(), genres: genres as Genre[] };
+      fc.property(fc.constant([] as Genre[]), (genres) => {
+        const input = { ...validBaseInput(), genres };
         const result = validateGigInput(input);
 
         expect(result).not.toBeNull();

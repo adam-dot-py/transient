@@ -1,0 +1,142 @@
+name: CI/CD
+
+# Runs the quality gate on every push/PR to main, then (only on direct pushes to
+# main, and only when an EXPO_TOKEN secret exists) builds and submits via EAS
+# sequentially: test (preview) first, then prod (production).
+#
+# Setup required before the deploy jobs do anything:
+#   1. Create an Expo access token and add it as the repo secret EXPO_TOKEN
+#      (GitHub → Settings → Secrets and variables → Actions).
+#   2. For the submit step, fill eas.json → submit.production.ios
+#      (ascAppId, appleTeamId) and configure EAS submit credentials.
+# Until EXPO_TOKEN is set, the build/submit jobs are skipped and only the
+# quality gate runs, so this workflow is safe to merge immediately.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'assets/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'assets/**'
+
+concurrency:
+  group: cicd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Quality gate — always runs. Lint + typecheck + tests + a bundle smoke test.
+  # ───────────────────────────────────────────────────────────────────────────
+  quality:
+    name: Lint, typecheck & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx expo lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npx jest --ci
+
+      - name: Bundle smoke test (web export)
+        run: npx expo export --platform web --output-dir /tmp/ci-export
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Deploy to TEST — preview build. Only on direct pushes to main, only when an
+  # EXPO_TOKEN is configured. Does not block the quality gate for contributors
+  # without secret access (e.g. PRs from forks).
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy-test:
+    name: EAS build (test / preview)
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Guard — require EXPO_TOKEN
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::warning::EXPO_TOKEN secret not set — skipping EAS build. Add it to enable deploys."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+        id: guard
+
+      - name: Install dependencies
+        if: steps.guard.outputs.skip != 'true'
+        run: npm ci
+
+      - uses: expo/expo-github-action@v8
+        if: steps.guard.outputs.skip != 'true'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: EAS build (preview, non-interactive)
+        if: steps.guard.outputs.skip != 'true'
+        run: eas build --profile preview --platform ios --non-interactive --no-wait
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Deploy to PROD — production build + submit. Runs after the test build.
+  # Requires EXPO_TOKEN and valid eas.json submit credentials.
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy-prod:
+    name: EAS build + submit (production)
+    needs: deploy-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Guard — require EXPO_TOKEN
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::warning::EXPO_TOKEN secret not set — skipping production build/submit."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+        id: guard
+
+      - name: Install dependencies
+        if: steps.guard.outputs.skip != 'true'
+        run: npm ci
+
+      - uses: expo/expo-github-action@v8
+        if: steps.guard.outputs.skip != 'true'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: EAS build + submit (production)
+        if: steps.guard.outputs.skip != 'true'
+        run: eas build --profile production --platform ios --non-interactive --auto-submit --no-wait
