@@ -6,6 +6,7 @@
  * return new values for the context/state layer to persist.
  */
 
+import { generateId } from '@/data/idService';
 import type { ApplicationStatus } from '@/types';
 
 /** A full application record as stored in the applications table */
@@ -39,7 +40,7 @@ export function createApplication(
   }
 
   const application: ApplicationRecord = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     gigId,
     musicianId,
     status: 'pending',

@@ -6,6 +6,7 @@
  * and compose in the context/state layer.
  */
 
+import { generateId } from '@/data/idService';
 import type { CreateGigInput, Genre, Gig, GigFilter, GigStatus, ValidationError } from '@/types';
 
 /** All valid genre values for validation */
@@ -33,7 +34,7 @@ export function getGigById(gigs: Gig[], id: string): Gig | null {
  * Creates a new gig from validated input.
  * Returns the new gig and updated array, or a ValidationError if input is invalid.
  *
- * - Generates a unique ID via crypto.randomUUID()
+ * - Generates a unique ID via generateId() (cross-runtime, Hermes-safe)
  * - Sets status to 'available' and acceptedMusicianIds to []
  */
 export function createGig(
@@ -47,7 +48,7 @@ export function createGig(
   }
 
   const newGig: Gig = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     title: input.title,
     venueName: input.venueName,
     addressLine1: input.addressLine1,

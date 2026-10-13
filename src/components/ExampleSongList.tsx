@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import { Colors, SemanticColors } from '@/constants/theme';
+import { generateId } from '@/data/idService';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import type { ExampleSong } from '@/types';
 
@@ -62,7 +63,7 @@ export default function ExampleSongList({
     }
 
     const newSong: ExampleSong = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       title: newTitle.trim(),
       artist: newArtist.trim(),
       sortOrder: songs.length,

@@ -14,6 +14,8 @@ interface GigCardProps {
   isFavorited?: boolean;
   /** Use "large" for the Nearby Gigs carousel (taller cards) */
   variant?: 'default' | 'large';
+  /** When true, the card spans its container's full width (vertical lists). */
+  fullWidth?: boolean;
 }
 
 /**
@@ -24,6 +26,7 @@ interface GigCardProps {
  *
  * `variant="large"` renders a 270x259 card (Nearby Gigs).
  * `variant="default"` renders a 270x150 card (Recommended Gigs).
+ * `fullWidth` makes the card span its container (hoster Active/Past gig lists).
  */
 export function GigCard({
   gig,
@@ -31,6 +34,7 @@ export function GigCard({
   onFavorite,
   isFavorited = false,
   variant = 'default',
+  fullWidth = false,
 }: GigCardProps) {
   const colorScheme = useColorScheme();
   const semantic = SemanticColors[colorScheme];
@@ -45,6 +49,7 @@ export function GigCard({
       style={[
         styles.card,
         { height: cardHeight },
+        fullWidth && styles.cardFullWidth,
         Platform.select({
           android: { elevation: 4 },
           default: {
@@ -106,6 +111,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     overflow: 'hidden',
     position: 'relative',
+  },
+  cardFullWidth: {
+    width: '100%',
   },
   glowAccent: {
     position: 'absolute',

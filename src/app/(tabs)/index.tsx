@@ -213,19 +213,11 @@ function HosterDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
         {active.length > 0 ? (
           <>
             <SectionHeader title="Active Gigs" />
-            <FlatList
-              horizontal
-              data={active}
-              keyExtractor={(item) => item.id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.carouselContent}
-              renderItem={({ item }) => (
-                <View style={styles.cardWrapper}>
-                  <GigCard gig={item} onPress={handleGigPress} />
-                </View>
-              )}
-              scrollEnabled
-            />
+            <View style={styles.verticalList}>
+              {active.map((item) => (
+                <GigCard key={item.id} gig={item} fullWidth onPress={handleGigPress} />
+              ))}
+            </View>
           </>
         ) : (
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -236,19 +228,11 @@ function HosterDashboard({ scheme }: { scheme: 'light' | 'dark' }) {
         {past.length > 0 ? (
           <>
             <SectionHeader title="Past Gigs" />
-            <FlatList
-              horizontal
-              data={past}
-              keyExtractor={(item) => item.id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.carouselContent}
-              renderItem={({ item }) => (
-                <View style={styles.cardWrapper}>
-                  <GigCard gig={item} onPress={handleGigPress} />
-                </View>
-              )}
-              scrollEnabled
-            />
+            <View style={styles.verticalList}>
+              {past.map((item) => (
+                <GigCard key={item.id} gig={item} fullWidth onPress={handleGigPress} />
+              ))}
+            </View>
           </>
         ) : (
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -297,6 +281,11 @@ const styles = StyleSheet.create({
   carouselContent: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  verticalList: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    gap: Spacing.three,
   },
   cardWrapper: {
     marginRight: Spacing.two,
