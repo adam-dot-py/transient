@@ -12,8 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ConfirmationBanner } from '@/components/ConfirmationBanner';
-import { GradientBorder } from '@/components/GradientBorder';
 import { Brand, Colors, SemanticColors, Spacing } from '@/constants/theme';
 import { useApplications } from '@/context/ApplicationContext';
 import { useGigs } from '@/context/GigContext';
