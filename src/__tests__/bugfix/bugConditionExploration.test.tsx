@@ -83,6 +83,8 @@ jest.mock('@/context/ProfileContext', () => ({
 jest.mock('@/context/ApplicationContext', () => ({
   useApplications: () => ({
     getApplicationsForGig: jest.fn(() => []),
+    getApplicationsByMusician: jest.fn(() => []),
+    submitApplication: jest.fn(() => ({ success: true })),
   }),
   ApplicationProvider: ({ children }: any) => children,
 }));

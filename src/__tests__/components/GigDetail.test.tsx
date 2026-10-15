@@ -74,10 +74,13 @@ jest.mock('@/context/RoleContext', () => ({
   RoleProvider: ({ children }: any) => children,
 }));
 
-// Mock ApplicationContext
+// Mock ApplicationContext — shared object so tests can assert on submitApplication
+const mockSubmitApplication = jest.fn(() => ({ success: true }));
 jest.mock('@/context/ApplicationContext', () => ({
   useApplications: () => ({
     getApplicationsForGig: jest.fn(() => []),
+    getApplicationsByMusician: jest.fn(() => []),
+    submitApplication: mockSubmitApplication,
   }),
   ApplicationProvider: ({ children }: any) => children,
 }));
@@ -191,19 +194,21 @@ describe('GigDetail — apply button for available gigs', () => {
     expect(getByText('Apply for this Gig')).toBeTruthy();
   });
 
-  it('calls acceptGig when Apply is pressed', async () => {
+  it('submits an application (sharing the musician profile with the host) when Apply is pressed', async () => {
+    mockSubmitApplication.mockClear();
     const { getByLabelText } = await render(<GigDetailScreen />);
     fireEvent.press(getByLabelText('Apply for this gig'));
-    expect(mockGigContextValue.acceptGig).toHaveBeenCalledWith('test-gig-id');
+    // Applying creates a pending application for the host to review — it does
+    // NOT auto-accept the gig.
+    expect(mockSubmitApplication).toHaveBeenCalledWith('test-gig-id', expect.any(String));
   });
 
-  it('shows confirmation banner after pressing Apply', async () => {
-    const { getByLabelText, getByText } = await render(<GigDetailScreen />);
-    // The banner text "Gig accepted!" should appear after pressing Apply
-    // (the banner is always in the tree with visible=bannerVisible prop)
+  it('shows the "Application sent" confirmation after pressing Apply', async () => {
+    mockSubmitApplication.mockClear();
+    mockSubmitApplication.mockReturnValueOnce({ success: true });
+    const { getByLabelText, findByText } = await render(<GigDetailScreen />);
     fireEvent.press(getByLabelText('Apply for this gig'));
-    // Verify acceptGig was called (functional test)
-    expect(mockGigContextValue.acceptGig).toHaveBeenCalledWith('test-gig-id');
+    expect(await findByText('Application sent')).toBeTruthy();
   });
 });
 

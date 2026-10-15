@@ -19,6 +19,7 @@ import { useApplications } from '@/context/ApplicationContext';
 import { useGigs } from '@/context/GigContext';
 import { useRole } from '@/context/RoleContext';
 import { formatPay } from '@/data/gigService';
+import { CURRENT_USER } from '@/data/mockProfiles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import type { ExampleSong } from '@/types';
 
@@ -41,9 +42,10 @@ const MOCK_SONGS: ExampleSong[] = [
 export default function GigDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { getGigById, acceptGig, addToRecentlyViewed } = useGigs();
+  const { getGigById, addToRecentlyViewed } = useGigs();
   const { role } = useRole();
-  const { getApplicationsForGig } = useApplications();
+  const { getApplicationsForGig, getApplicationsByMusician, submitApplication } =
+    useApplications();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const semantic = SemanticColors[colorScheme];
@@ -52,7 +54,13 @@ export default function GigDetailScreen() {
   const isHoster = role === 'hoster';
   const applicationCount = id ? getApplicationsForGig(id).length : 0;
 
-  const [accepted, setAccepted] = useState(false);
+  // Has the current musician already applied to this gig?
+  const alreadyApplied = id
+    ? getApplicationsByMusician(CURRENT_USER.id).some((a) => a.gigId === id)
+    : false;
+
+  const [applied, setApplied] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
   useEffect(() => {
     if (gig) {
       addToRecentlyViewed(gig.id);
@@ -75,11 +83,19 @@ export default function GigDetailScreen() {
     );
   }
 
-  const isAccepted = gig.status === 'accepted' || accepted;
+  const hasApplied = alreadyApplied || applied;
 
-  const handleAcceptGig = () => {
-    acceptGig(gig.id);
-    setAccepted(true);
+  const handleApply = () => {
+    if (!gig) return;
+    const result = submitApplication(gig.id, CURRENT_USER.id);
+    if (result.success) {
+      setApplied(true);
+      setApplyError(null);
+    } else {
+      // e.g. "Already applied to this gig"
+      setApplyError(result.error ?? 'Could not submit your application.');
+      setApplied(true);
+    }
   };
 
   return (
@@ -251,12 +267,14 @@ export default function GigDetailScreen() {
             {gig.description || 'No description provided for this gig.'}
           </Text>
 
-          {/* Apply button — full width, brand gradient, below description */}
-          {!isAccepted && gig.status === 'available' && !isHoster && (
+          {/* Apply button — shown to musicians who haven't applied yet.
+              Submitting creates a pending application that shares the
+              musician's profile with the host for their decision. */}
+          {!hasApplied && !isHoster && (
             <>
               <Pressable
                 style={styles.applyButtonFull}
-                onPress={handleAcceptGig}
+                onPress={handleApply}
                 accessibilityRole="button"
                 accessibilityLabel="Apply for this gig"
               >
@@ -276,10 +294,12 @@ export default function GigDetailScreen() {
             </>
           )}
 
-          {isAccepted && (
+          {hasApplied && !isHoster && (
             <View style={styles.appliedBanner}>
               <Ionicons name="checkmark-done" size={20} color={Brand.purple} />
-              <Text style={[styles.appliedBannerText, { color: Brand.purple }]}>Applied</Text>
+              <Text style={[styles.appliedBannerText, { color: Brand.purple }]}>
+                {applyError ? applyError : 'Application sent'}
+              </Text>
             </View>
           )}
         </View>

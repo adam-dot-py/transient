@@ -90,6 +90,8 @@ jest.mock('@/context/ProfileContext', () => ({
 jest.mock('@/context/ApplicationContext', () => ({
   useApplications: () => ({
     getApplicationsForGig: jest.fn(() => []),
+    getApplicationsByMusician: jest.fn(() => []),
+    submitApplication: jest.fn(() => ({ success: true })),
   }),
   ApplicationProvider: ({ children }: any) => children,
 }));
@@ -245,10 +247,12 @@ describe('Preservation Property: GigDetailScreen renders gig fields correctly', 
 
 describe('Preservation Property: GigDetailScreen Apply flow', () => {
   /**
-   * For available gigs, the "Apply" button is rendered and triggers acceptance.
+   * For gigs a musician hasn't applied to, the "Apply" button is rendered and
+   * pressing it submits an application for the host to review — it must NOT
+   * auto-accept the gig (acceptGig is not called).
    */
   it.each(SAMPLE_AVAILABLE_GIGS.slice(0, 15).map((gig, i) => [i, gig]))(
-    'renders Apply button and triggers acceptance for gig #%i',
+    'renders Apply button and submits an application (no auto-accept) for gig #%i',
     async (_index, gig) => {
       const mockAcceptGig = jest.fn();
       mockGigContextValue = {
@@ -267,8 +271,8 @@ describe('Preservation Property: GigDetailScreen Apply flow', () => {
       // Press it
       fireEvent.press(applyButton);
 
-      // acceptGig should have been called with gig id
-      expect(mockAcceptGig).toHaveBeenCalledWith(gig.id);
+      // Applying creates a reviewable application — it must NOT auto-accept.
+      expect(mockAcceptGig).not.toHaveBeenCalled();
     }
   );
 });

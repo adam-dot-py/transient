@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import {
     Pressable,
     SafeAreaView,
@@ -80,6 +81,20 @@ export default function HosterGigDetailScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.content}
       >
+        {/* Header with back button */}
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            style={[styles.headerBackButton, { backgroundColor: colors.backgroundElement }]}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </Pressable>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Gig Details</Text>
+        </View>
+
         <Text style={[styles.title, { color: colors.text }]}>{gig.title}</Text>
 
         <View style={styles.detailRow}>
@@ -191,6 +206,23 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.four,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    marginBottom: Spacing.four,
+  },
+  headerBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
   },
   title: {
     fontSize: 28,
