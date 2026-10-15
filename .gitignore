@@ -55,3 +55,4 @@ swift-example/
 
 # Backend setup guide (private, local reference)
 BACKEND_SETUP.md
+supabase-setup/
