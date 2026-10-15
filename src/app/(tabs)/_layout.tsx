@@ -1,44 +1,35 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet } from 'react-native';
 
+import GlassTabBar from '@/components/navigation/GlassTabBar';
 import { Brand, Colors } from '@/constants/theme';
 import { useNotificationContext } from '@/context/NotificationContext';
 import { useRole } from '@/context/RoleContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 /**
- * Tab layout following Apple HIG and Material 3 best practices:
- * - Full-width, fixed to bottom (not floating)
- * - Icon + label for each tab
- * - Brand purple accent on active tab
- * - Clean top border separator
- * - Proper safe area insets handled by the Tabs component
+ * Tab layout. The visible bar is rendered by {@link GlassTabBar}, a floating,
+ * capability-gated bar following Apple's iOS 26 "Liquid Glass" HIG:
+ *  - a floating pill that hovers above content (real glass on iOS 26+),
+ *  - a clean opaque fallback everywhere else and under Reduce Transparency,
+ *  - brand-purple active accent, icon + label, and badges preserved.
+ * Screen config (icons, labels, badges, hidden routes) stays here; only the
+ * surface/rendering moved into the custom `tabBar` renderer.
  */
 export default function TabLayout() {
   const scheme = useColorScheme();
   const { unreadCount } = useNotificationContext();
   const { role } = useRole();
 
-  const isDark = scheme === 'dark';
   const colors = Colors[scheme];
 
   return (
     <Tabs
+      tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         tabBarActiveTintColor: Brand.purple,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarShowLabel: true,
-        tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: isDark ? '#141422' : '#FFFFFF',
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: colors.border,
-          height: Platform.select({ ios: 88, android: 68 }),
-          paddingTop: 8,
-          paddingBottom: Platform.select({ ios: 28, android: 8 }),
-        },
       }}
     >
       <Tabs.Screen
@@ -74,7 +65,6 @@ export default function TabLayout() {
         options={{
           title: 'Activity',
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarBadgeStyle: styles.badge,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={24} color={color} />
           ),
@@ -92,18 +82,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBarLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  badge: {
-    backgroundColor: '#FE2C55',
-    fontSize: 10,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-});

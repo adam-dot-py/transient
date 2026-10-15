@@ -26,6 +26,7 @@ way.
 | 3 | [`03-rls-and-auth.md`](./03-rls-and-auth.md) | Row Level Security — why every table has it, how `auth.uid()` ties rows to users, and the auth model you must adopt (this is the part most likely to bite you). |
 | 4 | [`04-connect-the-app.md`](./04-connect-the-app.md) | Install the client, set env vars, flip the app from mock to live, and the **mock-first read/write pattern** for turning each context into real DB calls. |
 | 5 | [`05-testflight-readiness.md`](./05-testflight-readiness.md) | What specifically must be true before a production EAS build, and a copy-paste checklist. |
+| 6 | [`06-amplify-push.md`](./06-amplify-push.md) | The Amplify **receive** side: which musicians a broadcast reaches (the `amplify_recipients` RPC + migration `0002`), the in-app gig-card alert, and where real device push plugs in. |
 
 Supporting files:
 

@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Brand, Colors, Spacing } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 /**
@@ -14,6 +15,7 @@ export default function SettingsScreen() {
   const scheme = useColorScheme();
   const colors = Colors[scheme];
   const router = useRouter();
+  const { mode, setMode } = useTheme();
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -32,23 +34,23 @@ export default function SettingsScreen() {
         <View style={[styles.menuSection, { borderColor: colors.border }]}>
           <ThemeOption
             label="System"
-            selected={true}
+            selected={mode === 'system'}
             colors={colors}
-            onPress={() => {}}
+            onPress={() => setMode('system')}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <ThemeOption
             label="Light"
-            selected={false}
+            selected={mode === 'light'}
             colors={colors}
-            onPress={() => {}}
+            onPress={() => setMode('light')}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <ThemeOption
             label="Dark"
-            selected={false}
+            selected={mode === 'dark'}
             colors={colors}
-            onPress={() => {}}
+            onPress={() => setMode('dark')}
           />
         </View>
         <Text style={[styles.sectionFooter, { color: colors.textSecondary }]}>

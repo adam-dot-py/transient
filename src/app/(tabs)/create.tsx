@@ -20,7 +20,11 @@ import GenrePicker from '@/components/GenrePicker';
 import { Brand, Colors, SemanticColors, Spacing } from '@/constants/theme';
 import { useGigs } from '@/context/GigContext';
 import { useGigPush } from '@/context/GigPushContext';
+import { fetchPushRecipients, type PushCandidate } from '@/data/amplifyService';
 import { validateExampleSongs, validateGigInput } from '@/data/gigService';
+import { mockMusicianProfiles } from '@/data/mockMusicianProfiles';
+import { CURRENT_USER } from '@/data/mockProfiles';
+import { recordAmplifyPayment, type AmplifyRadius } from '@/services/stripeService';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import type { CreateGigInput, ExampleSong, Genre, Gig } from '@/types';
 
@@ -126,11 +130,27 @@ export default function CreateScreen() {
     }
 
     // No Amplify — create gig directly
-    finalizeGigCreation();
+    void finalizeGigCreation();
   };
 
-  /** Creates the gig and optionally pushes it (called after payment or directly) */
-  const finalizeGigCreation = () => {
+  /**
+   * Creates the gig and, when Amplify was purchased, broadcasts it to matching
+   * musicians. Called directly (no Amplify) or after a successful payment.
+   *
+   * Amplify broadcast model (the "other half" of Amplify — what musicians see):
+   *   1. The gig is created WITH real coordinates (GigContext geocodes it).
+   *   2. `fetchPushRecipients` finds musicians within the chosen radius who
+   *      share a genre (mock-first: in-memory match over mock musicians; live:
+   *      the amplify_recipients RPC + a push-token fan-out — see
+   *      supabase-setup/06-amplify-push.md).
+   *   3. Each recipient gets a gig-card alert (GigPushAlert) to apply/dismiss.
+   *
+   * In this single-device mock loop we cannot push to OTHER phones, so we
+   * demonstrate the receive side by queueing the alert locally only when the
+   * current user is themselves a matched recipient; otherwise we report how many
+   * musicians the push reached. In production, delivery is entirely server-side.
+   */
+  const finalizeGigCreation = async (paymentIntentId?: string) => {
     const input: CreateGigInput = {
       title: title.trim(),
       venueName: venueName.trim(),
@@ -147,16 +167,60 @@ export default function CreateScreen() {
       description: description.trim() || undefined,
     };
 
-    const result = createGig(input);
+    const result = await createGig(input);
 
     if ('type' in result && result.type === 'validation') {
       setErrors(result.fields);
       return;
     }
 
-    // Push the gig to matching musicians if Amplify was enabled
-    if (pushNotifications && !('type' in result)) {
-      pushGig(result as Gig);
+    const createdGig = result as Gig;
+
+    // Amplify: record the payment, then broadcast to matched musicians.
+    if (pushNotifications) {
+      try {
+        if (paymentIntentId) {
+          await recordAmplifyPayment({
+            paymentIntentId,
+            gigId: createdGig.id,
+            radius: amplifyRadius as AmplifyRadius,
+          });
+        }
+
+        // Candidate musicians for the mock path (live path reads them from the DB).
+        const candidates: PushCandidate[] = mockMusicianProfiles.map((m) => ({
+          id: m.id,
+          genres: m.genres,
+          latitude: m.latitude,
+          longitude: m.longitude,
+        }));
+
+        const recipients = await fetchPushRecipients(createdGig, candidates, {
+          radiusMiles: amplifyRadius,
+          matchGenres: true,
+        });
+
+        // Mock demo of the receive side: if the signed-in user is a matched
+        // recipient, surface the gig-card alert on this device.
+        const selfIsRecipient = recipients.some((r) => r.musicianId === CURRENT_USER.id);
+        if (selfIsRecipient) {
+          pushGig(createdGig);
+        }
+
+        Alert.alert(
+          'Amplified',
+          recipients.length > 0
+            ? `Your gig was pushed to ${recipients.length} musician${
+                recipients.length === 1 ? '' : 's'
+              } within ${amplifyRadius} miles.`
+            : `No musicians matched within ${amplifyRadius} miles yet — your gig is live and still browsable.`
+        );
+      } catch {
+        Alert.alert(
+          'Amplify issue',
+          'Your gig was created, but the push could not be sent. It is still live and browsable.'
+        );
+      }
     }
 
     // Success — offer to add to calendar
@@ -165,7 +229,7 @@ export default function CreateScreen() {
         text: 'Add to Calendar',
         onPress: async () => {
           const { addGigToCalendar } = await import('@/services/calendarService');
-          const added = await addGigToCalendar(result as Gig);
+          const added = await addGigToCalendar(createdGig);
           if (added) {
             Alert.alert('Added', 'Gig added to your calendar.', [
               { text: 'OK', onPress: () => router.replace('/(tabs)') },
@@ -180,9 +244,9 @@ export default function CreateScreen() {
   };
 
   /** Called when payment is confirmed in the AmplifyPaymentSheet */
-  const handlePaymentConfirm = (_paymentIntentId: string) => {
+  const handlePaymentConfirm = (paymentIntentId: string) => {
     // Create the gig first, then dismiss the payment sheet
-    finalizeGigCreation();
+    void finalizeGigCreation(paymentIntentId);
     setShowPaymentSheet(false);
   };
 

@@ -46,7 +46,12 @@ example
 .vscode/
 .venv/
 swift-example/
-.kiro/settings/mcp.json
+
+# Kiro Crew local CLI settings (whole dir is local state)
+.kiro/settings/
+
+# Scratch / local temp (jest/tsc TMPDIR workaround, build caches, checkpoints)
+.tmp/
 
 # Backend setup guide (private, local reference)
 BACKEND_SETUP.md

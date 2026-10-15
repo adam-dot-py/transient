@@ -48,6 +48,10 @@ export interface MusicianProfileRow {
   bio: string | null;
   city: string | null;
   country: string | null;
+  /** Home latitude (degrees, WGS84). Null = no location set. */
+  latitude: number | null;
+  /** Home longitude (degrees, WGS84). Null = no location set. */
+  longitude: number | null;
   genres: string[];
   music_links: MusicLink[];
   updated_at: string;
@@ -58,6 +62,8 @@ export interface MusicianProfileInsert {
   bio?: string | null;
   city?: string | null;
   country?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   genres?: string[];
   music_links?: MusicLink[];
 }
@@ -66,6 +72,8 @@ export interface MusicianProfileUpdate {
   bio?: string | null;
   city?: string | null;
   country?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   genres?: string[];
   music_links?: MusicLink[];
 }
@@ -149,6 +157,17 @@ export interface GigUpdate {
  */
 export interface SearchGigRow extends GigRow {
   distance_miles: number | null;
+}
+
+/**
+ * Row returned by the `amplify_recipients` RPC: a musician who should receive an
+ * amplified gig push, paired with their distance from the gig in MILES. Only
+ * matched musicians are returned, so `distance_miles` is always non-null and
+ * within the requested radius. See src/data/amplifyService.ts.
+ */
+export interface AmplifyRecipientRow {
+  musician_id: string;
+  distance_miles: number;
 }
 
 export interface ExampleSongRow {
@@ -339,6 +358,14 @@ export interface Database {
           p_sort_by: string;
         };
         Returns: SearchGigRow[];
+      };
+      amplify_recipients: {
+        Args: {
+          p_gig_id: string;
+          p_radius_miles: number;
+          p_match_genres: boolean;
+        };
+        Returns: AmplifyRecipientRow[];
       };
     };
   };

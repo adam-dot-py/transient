@@ -7,6 +7,7 @@
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
 
+import { geocodeAddress } from '@/data/geocodeService';
 import * as gigService from '@/data/gigService';
 import { MOCK_GIGS } from '@/data/mockGigs';
 import { CURRENT_USER } from '@/data/mockProfiles';
@@ -18,7 +19,7 @@ export interface GigContextValue {
   acceptedGigs: Gig[];
   getGigById: (id: string) => Gig | null;
   getGigsByStatus: (status: GigStatus) => Gig[];
-  createGig: (input: CreateGigInput) => Gig | ValidationError;
+  createGig: (input: CreateGigInput) => Promise<Gig | ValidationError>;
   acceptGig: (gigId: string) => void;
   addToRecentlyViewed: (gigId: string) => void;
   getHosterGigs: (hosterId: string) => { active: Gig[]; past: Gig[] };
@@ -54,15 +55,42 @@ export function GigProvider({ children }: { children: React.ReactNode }) {
     return gigService.filterByStatus(gigs, status);
   };
 
-  const createGig = (input: CreateGigInput): Gig | ValidationError => {
+  const createGig = async (
+    input: CreateGigInput
+  ): Promise<Gig | ValidationError> => {
     const result = gigService.createGig(gigs, input, CURRENT_USER.id);
 
     if ('error' in result) {
       return result.error;
     }
 
-    setGigs(result.gigs);
-    return result.gig;
+    // Geocode the address so the gig carries real coordinates. These feed the
+    // Explore map, the GigPushAlert map, and — critically — Amplify proximity
+    // matching (a gig with 0,0 coordinates can never be pushed by radius).
+    // Mock-first: geocodeAddress resolves known cities and defaults otherwise;
+    // the live path swaps in a real geocoder (see geocodeService.ts).
+    let gigWithLocation: Gig = result.gig;
+    try {
+      const geo = await geocodeAddress(
+        input.addressLine1,
+        input.city,
+        input.postcode,
+        input.country
+      );
+      if (geo) {
+        gigWithLocation = {
+          ...result.gig,
+          latitude: geo.latitude,
+          longitude: geo.longitude,
+        };
+      }
+    } catch {
+      // Geocoding failure is non-fatal: keep the gig with 0,0 (treated as "no
+      // location") rather than blocking creation.
+    }
+
+    setGigs([...gigs, gigWithLocation]);
+    return gigWithLocation;
   };
 
   const acceptGig = (gigId: string): void => {

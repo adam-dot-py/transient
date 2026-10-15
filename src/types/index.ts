@@ -124,6 +124,10 @@ export interface FullMusicianProfile {
   bio: string | null;
   city: string | null;
   country: string | null;
+  /** Home latitude (degrees, WGS84). Null/undefined = no location (excluded from Amplify radius). */
+  latitude?: number | null;
+  /** Home longitude (degrees, WGS84). Null/undefined = no location. */
+  longitude?: number | null;
   genres: Genre[];
   musicLinks: MusicLink[];
 }
@@ -163,4 +167,5 @@ export interface ApplicationWithProfile {
 export const STORAGE_KEYS = {
   ROLE: 'transient:role',
   RECENTLY_VIEWED: 'transient:recently-viewed',
+  THEME: 'transient:theme',
 } as const;

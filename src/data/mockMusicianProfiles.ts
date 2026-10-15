@@ -10,6 +10,8 @@ export const mockMusicianProfiles: FullMusicianProfile[] = [
     bio: 'Singer-songwriter blending folk and indie rock. Gigging across London for five years with a focus on intimate acoustic sets.',
     city: 'London',
     country: 'United Kingdom',
+    latitude: 51.5074,
+    longitude: -0.1278,
     genres: ['folk', 'rock'],
     musicLinks: [
       {
@@ -32,6 +34,8 @@ export const mockMusicianProfiles: FullMusicianProfile[] = [
     bio: 'Electronic producer and live performer from Manchester. Specialises in deep house and ambient sets for club nights and festivals.',
     city: 'Manchester',
     country: 'United Kingdom',
+    latitude: 53.4808,
+    longitude: -2.2426,
     genres: ['electronic', 'jazz'],
     musicLinks: [
       {
@@ -49,6 +53,8 @@ export const mockMusicianProfiles: FullMusicianProfile[] = [
     bio: 'Jazz and blues vocalist based in Bristol. Performs regularly at wine bars and supper clubs with a rotating trio.',
     city: 'Bristol',
     country: 'United Kingdom',
+    latitude: 51.4545,
+    longitude: -2.5879,
     genres: ['jazz', 'blues', 'pop'],
     musicLinks: [
       {
