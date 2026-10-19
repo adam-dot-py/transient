@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -147,13 +148,23 @@ export default function GigDetailScreen() {
 
         {/* Hero Card */}
         <View style={styles.heroCard}>
-          {/* Background gradient placeholder for gig image */}
-          <LinearGradient
-            colors={[semantic.cardImageGradientStart, semantic.cardImageGradientEnd]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
+          {/* Uploaded gig image when present, else the gradient placeholder. */}
+          {gig.imageUrl ? (
+            <Image
+              source={{ uri: gig.imageUrl }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={200}
+              testID="gig-hero-image"
+            />
+          ) : (
+            <LinearGradient
+              colors={[semantic.cardImageGradientStart, semantic.cardImageGradientEnd]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
 
           {/* Warm glow accent */}
           <View style={styles.heroGlow} />

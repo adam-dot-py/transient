@@ -4,15 +4,15 @@
  */
 
 import {
-    addToRecentlyViewed,
-    createGig,
-    filterByStatus,
-    formatPay,
-    getAllGigs,
-    getGigById,
-    truncateTitle,
-    updateGig,
-    validateGigInput,
+  addToRecentlyViewed,
+  createGig,
+  filterByStatus,
+  formatPay,
+  getAllGigs,
+  getGigById,
+  truncateTitle,
+  updateGig,
+  validateGigInput,
 } from '@/data/gigService';
 import type { CreateGigInput, Gig } from '@/types';
 
@@ -124,6 +124,22 @@ describe('createGig', () => {
     createGig(original, validInput, 'hoster-1');
     expect(original).toEqual(mockGigs);
   });
+
+  it('carries imageUrl through when provided', () => {
+    const result = createGig([], { ...validInput, imageUrl: 'file:///mock/photo.jpg' }, 'hoster-1');
+    expect('gig' in result).toBe(true);
+    if ('gig' in result) {
+      expect(result.gig.imageUrl).toBe('file:///mock/photo.jpg');
+    }
+  });
+
+  it('sets imageUrl to null when omitted (image is optional)', () => {
+    const result = createGig([], validInput, 'hoster-1');
+    expect('gig' in result).toBe(true);
+    if ('gig' in result) {
+      expect(result.gig.imageUrl).toBeNull();
+    }
+  });
 });
 
 // ─── updateGig ───────────────────────────────────────────────────────────────
@@ -200,6 +216,12 @@ describe('addToRecentlyViewed', () => {
 describe('validateGigInput', () => {
   it('returns null for valid input', () => {
     expect(validateGigInput(validInput)).toBeNull();
+  });
+
+  it('passes without an image (imageUrl is optional)', () => {
+    const { imageUrl, ...withoutImage } = { ...validInput, imageUrl: undefined };
+    void imageUrl;
+    expect(validateGigInput(withoutImage)).toBeNull();
   });
 
   it('returns errors for all missing required fields', () => {

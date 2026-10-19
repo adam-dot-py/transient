@@ -74,15 +74,42 @@ export const INVOICE_CONFIG = {
 // ─── Pure helpers: currency ────────────────────────────────────────────────────
 
 /**
- * Formats an amount given in pence as a currency string, e.g.
- * `formatCurrencyPence(25000)` => `'£250.00'`.
+ * Maps a lowercase ISO currency code to its display symbol. Kept small and
+ * explicit: the app is GBP-oriented, but the symbol must track the payment's
+ * `currency` field rather than being hardcoded, so a non-GBP row renders its
+ * own symbol instead of a misleading '£'.
+ */
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  gbp: '£',
+  usd: '$',
+  eur: '€',
+};
+
+/**
+ * Resolves the display symbol for a currency code. Known codes map to their
+ * symbol (e.g. 'gbp' => '£'); unknown codes fall back to the uppercased code
+ * followed by a space (e.g. 'chf' => 'CHF '), so the amount is never labelled
+ * with the wrong symbol.
+ */
+export function currencySymbolFor(currency: string = INVOICE_CONFIG.currency): string {
+  const code = currency.trim().toLowerCase();
+  return CURRENCY_SYMBOLS[code] ?? `${currency.trim().toUpperCase()} `;
+}
+
+/**
+ * Formats an amount given in pence as a currency string, deriving the symbol
+ * from the currency code, e.g. `formatCurrencyPence(25000)` => `'£250.00'`
+ * (GBP by default) and `formatCurrencyPence(25000, 'usd')` => `'$250.00'`.
+ *
+ * The `currency` argument defaults to `INVOICE_CONFIG.currency` ('gbp') so
+ * existing call sites that pass only an amount keep rendering '£'.
  */
 export function formatCurrencyPence(
   amountPence: number,
-  symbol: string = INVOICE_CONFIG.currencySymbol
+  currency: string = INVOICE_CONFIG.currency
 ): string {
   const pounds = amountPence / 100;
-  return `${symbol}${pounds.toFixed(2)}`;
+  return `${currencySymbolFor(currency)}${pounds.toFixed(2)}`;
 }
 
 /** Converts whole/fractional pounds to pence (rounded to the nearest penny). */

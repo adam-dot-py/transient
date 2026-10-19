@@ -7,6 +7,7 @@
 import {
   buildInvoice,
   canGenerateInvoice,
+  currencySymbolFor,
   formatCurrencyPence,
   generateInvoiceNumber,
   INVOICE_CONFIG,
@@ -81,8 +82,46 @@ describe('formatCurrencyPence', () => {
     expect(formatCurrencyPence(9999900)).toBe('£99999.00');
   });
 
-  it('respects a custom symbol', () => {
-    expect(formatCurrencyPence(12345, '$')).toBe('$123.45');
+  it('defaults to the GBP symbol when no currency is given', () => {
+    expect(formatCurrencyPence(12345)).toBe('£123.45');
+  });
+
+  it('derives the symbol from the currency code', () => {
+    expect(formatCurrencyPence(12345, 'gbp')).toBe('£123.45');
+    expect(formatCurrencyPence(12345, 'usd')).toBe('$123.45');
+    expect(formatCurrencyPence(12345, 'eur')).toBe('€123.45');
+  });
+
+  it('does not render £ for a non-GBP currency', () => {
+    const usd = formatCurrencyPence(12345, 'usd');
+    expect(usd).not.toContain('£');
+    expect(usd.startsWith('$')).toBe(true);
+  });
+
+  it('falls back to the uppercased code for an unknown currency', () => {
+    expect(formatCurrencyPence(12345, 'chf')).toBe('CHF 123.45');
+  });
+});
+
+// ─── currencySymbolFor ─────────────────────────────────────────────────────────
+
+describe('currencySymbolFor', () => {
+  it('defaults to the GBP symbol', () => {
+    expect(currencySymbolFor()).toBe('£');
+  });
+
+  it('maps known currency codes to their symbol', () => {
+    expect(currencySymbolFor('gbp')).toBe('£');
+    expect(currencySymbolFor('usd')).toBe('$');
+    expect(currencySymbolFor('eur')).toBe('€');
+  });
+
+  it('is case-insensitive', () => {
+    expect(currencySymbolFor('GBP')).toBe('£');
+  });
+
+  it('falls back to the uppercased code for unknown currencies', () => {
+    expect(currencySymbolFor('chf')).toBe('CHF ');
   });
 });
 

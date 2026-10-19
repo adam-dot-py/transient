@@ -80,6 +80,34 @@ Four policies are defined:
 - A musician is intentionally granted **no INSERT and no UPDATE**. Musicians only read their payments to generate invoices.
 - Only the gig's **hoster** can create and update payment rows, and only for gigs they own (the gig's `hoster_id` equals the caller). The hoster is the party that actually pays the musician, so the hoster owns writes. This mirrors the ownership check used by the `applications` and `example_songs` policies.
 
+## 4a. Additive `gigs.image_url` column (migration `0004_gig_image.sql`)
+
+A later change lets a hoster optionally attach an image to a gig (the gig
+detail hero card and gig cards fall back to the existing gradient placeholder
+when none is set). This is an additive, idempotent migration on the existing
+`gigs` table — apply it after `0003_gig_payments.sql`:
+
+| Order | File                                                |
+| ----- | --------------------------------------------------- |
+| 4     | **`src/supabase/migrations/0004_gig_image.sql`**    |
+
+| Column      | Type   | Constraints / Default                                  |
+| ----------- | ------ | ------------------------------------------------------ |
+| `image_url` | `text` | NULLABLE (`ALTER TABLE gigs ADD COLUMN IF NOT EXISTS`) |
+
+- **Nullable:** `image_url` is optional. When it is `NULL` the app renders the
+  gradient placeholder; when set, the uploaded image is shown. The same column
+  is consolidated into `src/supabase/schema.sql`.
+- **No new RLS:** the column lives on the existing `gigs` row, so the existing
+  `gigs` policies (public SELECT of gigs; hoster-only INSERT/UPDATE of their own
+  gigs) already govern who can read and write it. No new policy is needed.
+- **Storage for live use:** for a live backend, gig images would be uploaded to
+  a Supabase Storage bucket (e.g. a `gig-images` bucket) and `image_url` would
+  hold the object path / public URL. **No bucket is created by this feature** —
+  the mock dev loop uses a local-uri picker (`src/components/GigImagePicker.tsx`,
+  mirroring `AvatarUploader`) so no bucket is required for local development.
+  Provision the bucket when wiring up a real image upload pipeline.
+
 ## 5. Nothing else is required
 
 | Backend item                  | Required for this feature?                                                                                                                           |

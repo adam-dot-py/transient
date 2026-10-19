@@ -143,6 +143,36 @@ export const mockApplicationsExtended: ApplicationWithProfile[] = [
     },
   },
   {
+    // gig-9 "Last Month's Rock Night" — a PAST gig musician-1 played and was
+    // paid for (see MOCK_GIG_PAYMENTS). This 'accepted' record makes the
+    // invoice happy path reachable end to end in mock mode: the gig-detail gate
+    // requires both an 'accepted' application AND the musician id in
+    // gig.acceptedMusicianIds (gig-9 already lists 'musician-1').
+    id: 'app-ext-7',
+    gigId: 'gig-9',
+    musicianId: 'musician-1',
+    status: 'accepted',
+    message: 'Had a blast playing Exit/In — three-band rock night, sold-out crowd.',
+    createdAt: '2024-01-05T12:00:00.000Z',
+    musician: {
+      id: 'musician-1',
+      displayName: 'Rae Holloway',
+      role: 'musician',
+      avatarUrl: null,
+      bio: 'Nashville-based rock and blues guitarist with 8 years of live performance experience. Comfortable leading a band or playing solo with a loop pedal.',
+      city: 'Nashville',
+      country: 'USA',
+      genres: ['rock', 'blues'],
+      musicLinks: [
+        {
+          platform: 'apple_music',
+          url: 'https://music.apple.com/artist/rae-holloway',
+          title: 'Rae Holloway on Apple Music',
+        },
+      ],
+    },
+  },
+  {
     id: 'app-ext-6',
     gigId: 'gig-5',
     musicianId: 'musician-2',

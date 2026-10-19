@@ -61,7 +61,7 @@ export const MOCK_GIGS: Gig[] = [
   {
     id: 'gig-2',
     title: 'Jazz Brunch Session',
-    venueName: 'Rudy\'s Jazz Room',
+    venueName: "Rudy's Jazz Room",
     addressLine1: '809 Gleaves St',
     addressLine2: '',
     city: 'Nashville',
@@ -101,6 +101,8 @@ export const MOCK_GIGS: Gig[] = [
     status: 'available',
     hosterId: 'hoster-1',
     acceptedMusicianIds: [],
+    // Demonstrates the uploaded-image path; others keep the gradient default.
+    imageUrl: 'https://picsum.photos/seed/transient-gig-3/800/600',
   },
   {
     id: 'gig-4',
@@ -129,7 +131,7 @@ export const MOCK_GIGS: Gig[] = [
   {
     id: 'gig-5',
     title: 'Blues on Broadway',
-    venueName: 'Robert\'s Western World',
+    venueName: "Robert's Western World",
     addressLine1: '416 Broadway',
     addressLine2: '',
     city: 'Nashville',
@@ -191,6 +193,8 @@ export const MOCK_GIGS: Gig[] = [
     status: 'accepted',
     hosterId: 'hoster-1',
     acceptedMusicianIds: ['musician-1', 'musician-3'],
+    // Demonstrates the uploaded-image path; others keep the gradient default.
+    imageUrl: 'https://picsum.photos/seed/transient-gig-7/800/600',
   },
   {
     id: 'gig-8',
@@ -218,7 +222,7 @@ export const MOCK_GIGS: Gig[] = [
   // ─── Past gigs (past dates) ────────────────────────────────────────────
   {
     id: 'gig-9',
-    title: 'Last Month\'s Rock Night',
+    title: "Last Month's Rock Night",
     venueName: 'Exit/In',
     addressLine1: '2208 Elliston Pl',
     addressLine2: '',
@@ -232,8 +236,7 @@ export const MOCK_GIGS: Gig[] = [
     endTime: '23:30',
     genres: ['rock'],
     pay: 225,
-    description:
-      'Three-band bill at Exit/In. 45-minute sets each. Sold out crowd, great energy.',
+    description: 'Three-band bill at Exit/In. 45-minute sets each. Sold out crowd, great energy.',
     status: 'past',
     hosterId: 'hoster-1',
     acceptedMusicianIds: ['musician-1'],
@@ -241,7 +244,7 @@ export const MOCK_GIGS: Gig[] = [
   {
     id: 'gig-10',
     title: 'Jazz Standards Evening',
-    venueName: 'Rudy\'s Jazz Room',
+    venueName: "Rudy's Jazz Room",
     addressLine1: '809 Gleaves St',
     addressLine2: '',
     city: 'Nashville',
@@ -276,15 +279,14 @@ export const MOCK_GIGS: Gig[] = [
     endTime: '02:00',
     genres: ['electronic'],
     pay: 175,
-    description:
-      'Open decks night with rotating DJs. 30-minute sets, all sub-genres welcome.',
+    description: 'Open decks night with rotating DJs. 30-minute sets, all sub-genres welcome.',
     status: 'past',
     hosterId: 'hoster-1',
     acceptedMusicianIds: ['musician-3'],
   },
   {
     id: 'gig-12',
-    title: 'Bluegrass Picker\'s Circle',
+    title: "Bluegrass Picker's Circle",
     venueName: 'Station Inn',
     addressLine1: '402 12th Ave S',
     addressLine2: '',
@@ -299,7 +301,7 @@ export const MOCK_GIGS: Gig[] = [
     genres: ['folk'],
     pay: 125,
     description:
-      'Weekly picker\'s circle at the legendary Station Inn. Acoustic instruments only. All skill levels.',
+      "Weekly picker's circle at the legendary Station Inn. Acoustic instruments only. All skill levels.",
     status: 'past',
     hosterId: 'hoster-2',
     acceptedMusicianIds: ['musician-1', 'musician-2'],

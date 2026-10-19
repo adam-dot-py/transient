@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -45,12 +46,23 @@ export function GigListingCard({
         accessibilityRole="button"
         accessibilityLabel={`View ${gig.venueName}`}
       >
-        <LinearGradient
-          colors={[semantic.cardImageGradientStart, semantic.cardImageGradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+        {/* Uploaded gig image when present, else the gradient placeholder. */}
+        {gig.imageUrl ? (
+          <Image
+            source={{ uri: gig.imageUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={200}
+            testID="gig-listing-image"
+          />
+        ) : (
+          <LinearGradient
+            colors={[semantic.cardImageGradientStart, semantic.cardImageGradientEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         {/* Pagination dots */}
         <View style={styles.pagination}>
           <View style={[styles.paginationDot, styles.paginationDotActive]} />
@@ -79,9 +91,7 @@ export function GigListingCard({
             </View>
             <View style={styles.metaItem}>
               <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
-              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                {distance}
-              </Text>
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>{distance}</Text>
             </View>
           </View>
         </View>
@@ -89,12 +99,8 @@ export function GigListingCard({
         {/* Price + CTA */}
         <View style={styles.priceRow}>
           <View style={styles.priceContainer}>
-            <Text style={[styles.priceText, { color: colors.text }]}>
-              {formatPay(gig.pay)}
-            </Text>
-            <Text style={[styles.priceUnit, { color: colors.textSecondary }]}>
-              / night
-            </Text>
+            <Text style={[styles.priceText, { color: colors.text }]}>{formatPay(gig.pay)}</Text>
+            <Text style={[styles.priceUnit, { color: colors.textSecondary }]}>/ night</Text>
           </View>
 
           <Pressable

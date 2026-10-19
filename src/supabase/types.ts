@@ -99,6 +99,7 @@ export interface GigRow {
   status: string;
   push_enabled: boolean;
   accepted_musician_ids: string[];
+  image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -124,6 +125,7 @@ export interface GigInsert {
   status?: string;
   push_enabled?: boolean;
   accepted_musician_ids?: string[];
+  image_url?: string | null;
 }
 
 export interface GigUpdate {
@@ -146,6 +148,7 @@ export interface GigUpdate {
   status?: string;
   push_enabled?: boolean;
   accepted_musician_ids?: string[];
+  image_url?: string | null;
 }
 
 /**

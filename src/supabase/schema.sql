@@ -117,6 +117,7 @@ CREATE TABLE gigs (
   status                text             NOT NULL DEFAULT 'available',
   push_enabled          boolean          NOT NULL DEFAULT false,
   accepted_musician_ids uuid[]           NOT NULL DEFAULT '{}',
+  image_url             text,
   created_at            timestamptz      NOT NULL DEFAULT now(),
   updated_at            timestamptz      NOT NULL DEFAULT now()
 );

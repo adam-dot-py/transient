@@ -75,7 +75,7 @@ function renderLineItems(invoice: Invoice): string {
       (item) => `
         <tr>
           <td class="item-desc">${escapeHtml(item.description)}</td>
-          <td class="item-amount">${escapeHtml(formatCurrencyPence(item.amountPence))}</td>
+          <td class="item-amount">${escapeHtml(formatCurrencyPence(item.amountPence, invoice.currency))}</td>
         </tr>
       `
     )
@@ -88,8 +88,8 @@ function renderLineItems(invoice: Invoice): string {
  */
 export function renderInvoiceHtml(invoice: Invoice): string {
   const currencyCode = escapeHtml(invoice.currency.toUpperCase());
-  const total = escapeHtml(formatCurrencyPence(invoice.totalPence));
-  const subtotal = escapeHtml(formatCurrencyPence(invoice.subtotalPence));
+  const total = escapeHtml(formatCurrencyPence(invoice.totalPence, invoice.currency));
+  const subtotal = escapeHtml(formatCurrencyPence(invoice.subtotalPence, invoice.currency));
 
   return `<!DOCTYPE html>
 <html lang="en">

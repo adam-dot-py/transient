@@ -36,6 +36,12 @@ export interface Gig {
   status: GigStatus;
   hosterId: string;
   acceptedMusicianIds: string[];
+  /**
+   * Optional hero/card image for the gig (a storage path or URL). When null or
+   * absent the UI falls back to the gradient placeholder. Mirrors the nullable
+   * `profiles.avatar_url` convention.
+   */
+  imageUrl?: string | null;
 }
 
 /** Input shape for creating a new gig (no id, status, or hosterId) */
@@ -53,6 +59,8 @@ export interface CreateGigInput {
   genres: Genre[];
   pay: number;
   description?: string;
+  /** Optional image for the gig (local uri in mock mode, storage path/URL live). */
+  imageUrl?: string;
 }
 
 /** Validation error returned when gig input fails checks */
