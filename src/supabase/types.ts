@@ -293,6 +293,38 @@ export interface AmplifyPaymentUpdate {
   status?: string;
 }
 
+export interface GigPaymentRow {
+  id: string;
+  gig_id: string;
+  musician_id: string;
+  amount_pence: number;
+  currency: string;
+  status: 'pending' | 'paid';
+  invoice_number: string | null;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GigPaymentInsert {
+  id?: string;
+  gig_id: string;
+  musician_id: string;
+  amount_pence: number;
+  currency?: string;
+  status?: 'pending' | 'paid';
+  invoice_number?: string | null;
+  paid_at?: string | null;
+}
+
+export interface GigPaymentUpdate {
+  amount_pence?: number;
+  currency?: string;
+  status?: 'pending' | 'paid';
+  invoice_number?: string | null;
+  paid_at?: string | null;
+}
+
 // ─── Database Interface ──────────────────────────────────────────────────────
 
 /**
@@ -343,6 +375,11 @@ export interface Database {
         Row: AmplifyPaymentRow;
         Insert: AmplifyPaymentInsert;
         Update: AmplifyPaymentUpdate;
+      };
+      gig_payments: {
+        Row: GigPaymentRow;
+        Insert: GigPaymentInsert;
+        Update: GigPaymentUpdate;
       };
     };
     Functions: {
