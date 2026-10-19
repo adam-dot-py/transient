@@ -18,7 +18,10 @@
         "foregroundImage": "./assets/images/transient-icon.svg"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -42,7 +45,8 @@
         {
           "locationWhenInUsePermission": "Transient uses your location to show gigs near you."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,
