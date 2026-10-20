@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   image: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: '#E0E0E0',
   },
   placeholderContent: {
