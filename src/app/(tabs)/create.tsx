@@ -2,21 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmplifyPaymentSheet } from '@/components/AmplifyPaymentSheet';
 import { DateTimeField } from '@/components/DateTimeField';
 import ExampleSongList from '@/components/ExampleSongList';
 import GenrePicker from '@/components/GenrePicker';
+import GigImagePicker from '@/components/GigImagePicker';
 import { Brand, Colors, SemanticColors, Spacing } from '@/constants/theme';
 import { useGigs } from '@/context/GigContext';
 import { useGigPush } from '@/context/GigPushContext';
@@ -41,6 +34,10 @@ export default function CreateScreen() {
   const router = useRouter();
   const { createGig } = useGigs();
   const { pushGig } = useGigPush();
+
+  // Photo (optional) — a local uri from the mock picker, or null for the
+  // gradient placeholder default.
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   // Basic Info
   const [title, setTitle] = useState('');
@@ -95,6 +92,7 @@ export default function CreateScreen() {
       genres,
       pay: pay ? Number(pay) : undefined,
       description: description.trim() || undefined,
+      imageUrl: imageUrl ?? undefined,
     };
 
     // Validate gig input
@@ -165,6 +163,7 @@ export default function CreateScreen() {
       genres,
       pay: Number(pay),
       description: description.trim() || undefined,
+      imageUrl: imageUrl ?? undefined,
     };
 
     const result = await createGig(input);
@@ -284,7 +283,11 @@ export default function CreateScreen() {
           style={styles.amplifyContainer}
         >
           <LinearGradient
-            colors={pushNotifications ? ['#6366F1', '#8B5CF6', '#D946EF'] : [colors.backgroundElement, colors.backgroundElement]}
+            colors={
+              pushNotifications
+                ? ['#6366F1', '#8B5CF6', '#D946EF']
+                : [colors.backgroundElement, colors.backgroundElement]
+            }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.amplifyPill}
@@ -294,10 +297,17 @@ export default function CreateScreen() {
               size={18}
               color={pushNotifications ? '#FFFFFF' : colors.textSecondary}
             />
-            <Text style={[styles.amplifyText, { color: pushNotifications ? '#FFFFFF' : colors.text }]}>
+            <Text
+              style={[styles.amplifyText, { color: pushNotifications ? '#FFFFFF' : colors.text }]}
+            >
               Amplify
             </Text>
-            <Text style={[styles.amplifySubtext, { color: pushNotifications ? 'rgba(255,255,255,0.8)' : colors.textSecondary }]}>
+            <Text
+              style={[
+                styles.amplifySubtext,
+                { color: pushNotifications ? 'rgba(255,255,255,0.8)' : colors.textSecondary },
+              ]}
+            >
               {pushNotifications ? 'ON — pushes to musicians' : 'Push to nearby musicians'}
             </Text>
           </LinearGradient>
@@ -351,7 +361,11 @@ export default function CreateScreen() {
           <TextInput
             style={[
               styles.input,
-              { color: colors.text, borderColor: errors.title ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
+              {
+                color: colors.text,
+                borderColor: errors.title ? '#FF3B30' : colors.border,
+                backgroundColor: colors.backgroundElement,
+              },
             ]}
             value={title}
             onChangeText={setTitle}
@@ -368,7 +382,11 @@ export default function CreateScreen() {
           <TextInput
             style={[
               styles.textArea,
-              { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundElement },
+              {
+                color: colors.text,
+                borderColor: colors.border,
+                backgroundColor: colors.backgroundElement,
+              },
             ]}
             value={description}
             onChangeText={setDescription}
@@ -382,6 +400,16 @@ export default function CreateScreen() {
           />
         </View>
 
+        {/* Section: Photo (optional) */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Photo (optional)</Text>
+          <GigImagePicker
+            imageUrl={imageUrl}
+            onImageSelected={(file) => setImageUrl(file.uri)}
+            onImageCleared={() => setImageUrl(null)}
+          />
+        </View>
+
         {/* Section: Location */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
@@ -390,7 +418,11 @@ export default function CreateScreen() {
           <TextInput
             style={[
               styles.input,
-              { color: colors.text, borderColor: errors.venueName ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
+              {
+                color: colors.text,
+                borderColor: errors.venueName ? '#FF3B30' : colors.border,
+                backgroundColor: colors.backgroundElement,
+              },
             ]}
             value={venueName}
             onChangeText={setVenueName}
@@ -404,7 +436,11 @@ export default function CreateScreen() {
           <TextInput
             style={[
               styles.input,
-              { color: colors.text, borderColor: errors.addressLine1 ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
+              {
+                color: colors.text,
+                borderColor: errors.addressLine1 ? '#FF3B30' : colors.border,
+                backgroundColor: colors.backgroundElement,
+              },
             ]}
             value={addressLine1}
             onChangeText={setAddressLine1}
@@ -421,7 +457,11 @@ export default function CreateScreen() {
           <TextInput
             style={[
               styles.input,
-              { color: colors.text, borderColor: errors.addressLine2 ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
+              {
+                color: colors.text,
+                borderColor: errors.addressLine2 ? '#FF3B30' : colors.border,
+                backgroundColor: colors.backgroundElement,
+              },
             ]}
             value={addressLine2}
             onChangeText={setAddressLine2}
@@ -436,7 +476,11 @@ export default function CreateScreen() {
           <TextInput
             style={[
               styles.input,
-              { color: colors.text, borderColor: errors.city ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
+              {
+                color: colors.text,
+                borderColor: errors.city ? '#FF3B30' : colors.border,
+                backgroundColor: colors.backgroundElement,
+              },
             ]}
             value={city}
             onChangeText={setCity}
@@ -451,7 +495,11 @@ export default function CreateScreen() {
           <TextInput
             style={[
               styles.input,
-              { color: colors.text, borderColor: errors.postcode ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
+              {
+                color: colors.text,
+                borderColor: errors.postcode ? '#FF3B30' : colors.border,
+                backgroundColor: colors.backgroundElement,
+              },
             ]}
             value={postcode}
             onChangeText={setPostcode}
@@ -466,7 +514,11 @@ export default function CreateScreen() {
           <TextInput
             style={[
               styles.input,
-              { color: colors.text, borderColor: errors.country ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
+              {
+                color: colors.text,
+                borderColor: errors.country ? '#FF3B30' : colors.border,
+                backgroundColor: colors.backgroundElement,
+              },
             ]}
             value={country}
             onChangeText={setCountry}
@@ -512,11 +564,7 @@ export default function CreateScreen() {
 
         {/* Section: Genres */}
         <View style={styles.section}>
-          <GenrePicker
-            selectedGenres={genres}
-            onGenresChange={setGenres}
-            error={errors.genres}
-          />
+          <GenrePicker selectedGenres={genres} onGenresChange={setGenres} error={errors.genres} />
         </View>
 
         {/* Section: Pay */}
@@ -528,7 +576,11 @@ export default function CreateScreen() {
             <TextInput
               style={[
                 styles.payInput,
-                { color: colors.text, borderColor: errors.pay ? '#FF3B30' : colors.border, backgroundColor: colors.backgroundElement },
+                {
+                  color: colors.text,
+                  borderColor: errors.pay ? '#FF3B30' : colors.border,
+                  backgroundColor: colors.backgroundElement,
+                },
               ]}
               value={pay}
               onChangeText={setPay}

@@ -1,30 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { InvoiceExportButton } from '@/components/InvoiceExportButton';
 import { Brand, Colors, SemanticColors, Spacing } from '@/constants/theme';
 import { useApplications } from '@/context/ApplicationContext';
 import { useGigs } from '@/context/GigContext';
 import { useRole } from '@/context/RoleContext';
 import { formatPay } from '@/data/gigService';
-import { CURRENT_USER } from '@/data/mockProfiles';
+import { getGigPaymentForMusician } from '@/data/invoiceService';
+import { CURRENT_USER, MOCK_HOSTERS } from '@/data/mockProfiles';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import type { ExampleSong } from '@/types';
+import type { ApplicationStatus, ExampleSong, GigPayment } from '@/types';
 
 /** Mock example songs for demo — in production these come from the example_songs table */
 const MOCK_SONGS: ExampleSong[] = [
   { id: 'song-1', title: 'Superstition', artist: 'Stevie Wonder', sortOrder: 1 },
-  { id: 'song-2', title: 'Ain\'t No Sunshine', artist: 'Bill Withers', sortOrder: 2 },
+  { id: 'song-2', title: "Ain't No Sunshine", artist: 'Bill Withers', sortOrder: 2 },
   { id: 'song-3', title: 'Fly Me to the Moon', artist: 'Frank Sinatra', sortOrder: 3 },
 ];
 
@@ -42,8 +38,7 @@ export default function GigDetailScreen() {
   const router = useRouter();
   const { getGigById, addToRecentlyViewed } = useGigs();
   const { role } = useRole();
-  const { getApplicationsForGig, getApplicationsByMusician, submitApplication } =
-    useApplications();
+  const { getApplicationsForGig, getApplicationsByMusician, submitApplication } = useApplications();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const semantic = SemanticColors[colorScheme];
@@ -59,6 +54,24 @@ export default function GigDetailScreen() {
 
   const [applied, setApplied] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
+
+  // The current musician's application status for this gig (if any), used to
+  // gate the invoice export control via invoiceService.canGenerateInvoice.
+  const applicationStatus: ApplicationStatus = id
+    ? (getApplicationsByMusician(CURRENT_USER.id).find((a) => a.gigId === id)?.status ?? 'pending')
+    : 'pending';
+
+  // The musician is "successful" for a gig when their application was accepted
+  // AND their id is in the gig's acceptedMusicianIds. Only then do we fetch the
+  // payment record that backs the invoice.
+  const isAcceptedMusician =
+    !isHoster &&
+    applicationStatus === 'accepted' &&
+    !!gig &&
+    gig.acceptedMusicianIds.includes(CURRENT_USER.id);
+
+  const [gigPayment, setGigPayment] = useState<GigPayment | null>(null);
+
   useEffect(() => {
     if (gig) {
       addToRecentlyViewed(gig.id);
@@ -66,13 +79,34 @@ export default function GigDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Fetch the gig payment (mock-first) once we know the current user is an
+  // accepted musician. setState happens only inside the async callbacks (never
+  // synchronously in the effect body) to avoid cascading renders.
+  useEffect(() => {
+    let cancelled = false;
+    if (isAcceptedMusician && gig) {
+      getGigPaymentForMusician(gig.id, CURRENT_USER.id)
+        .then((payment) => {
+          if (!cancelled) setGigPayment(payment);
+        })
+        .catch(() => {
+          if (!cancelled) setGigPayment(null);
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [isAcceptedMusician, gig]);
+
+  // Guard against a stale payment leaking when the user is no longer an
+  // accepted musician (e.g. navigating between gigs reuses this screen).
+  const effectivePayment = isAcceptedMusician ? gigPayment : null;
+
   if (!gig) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.notFoundContainer}>
-          <Text style={[styles.notFoundText, { color: colors.text }]}>
-            Gig not found
-          </Text>
+          <Text style={[styles.notFoundText, { color: colors.text }]}>Gig not found</Text>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>Go Back</Text>
           </Pressable>
@@ -98,11 +132,7 @@ export default function GigDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Title bar */}
         <View style={styles.titleBar}>
           <Pressable
@@ -118,13 +148,23 @@ export default function GigDetailScreen() {
 
         {/* Hero Card */}
         <View style={styles.heroCard}>
-          {/* Background gradient placeholder for gig image */}
-          <LinearGradient
-            colors={[semantic.cardImageGradientStart, semantic.cardImageGradientEnd]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
+          {/* Uploaded gig image when present, else the gradient placeholder. */}
+          {gig.imageUrl ? (
+            <Image
+              source={{ uri: gig.imageUrl }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={200}
+              testID="gig-hero-image"
+            />
+          ) : (
+            <LinearGradient
+              colors={[semantic.cardImageGradientStart, semantic.cardImageGradientEnd]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
 
           {/* Warm glow accent */}
           <View style={styles.heroGlow} />
@@ -170,15 +210,20 @@ export default function GigDetailScreen() {
         {/* Details Section — Time & Location pills + Map */}
         <View style={styles.detailsSection}>
           {/* Date & Time pill */}
-          <View style={[styles.detailPill, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.detailPill,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
+          >
             <View style={[styles.detailIconCircle, { backgroundColor: Brand.purple + '15' }]}>
               <Ionicons name="calendar" size={16} color={Brand.purple} />
             </View>
             <View style={styles.detailPillContent}>
-              <Text style={[styles.detailPillLabel, { color: colors.textSecondary }]}>Date & Time</Text>
-              <Text style={[styles.detailPillValue, { color: colors.text }]}>
-                {gig.date}
+              <Text style={[styles.detailPillLabel, { color: colors.textSecondary }]}>
+                Date & Time
               </Text>
+              <Text style={[styles.detailPillValue, { color: colors.text }]}>{gig.date}</Text>
               <Text style={[styles.detailPillSub, { color: colors.textSecondary }]}>
                 {gig.startTime} – {gig.endTime}
               </Text>
@@ -186,15 +231,20 @@ export default function GigDetailScreen() {
           </View>
 
           {/* Location pill */}
-          <View style={[styles.detailPill, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.detailPill,
+              { backgroundColor: colors.backgroundElement, borderColor: colors.border },
+            ]}
+          >
             <View style={[styles.detailIconCircle, { backgroundColor: Brand.blue + '15' }]}>
               <Ionicons name="location" size={16} color={Brand.blue} />
             </View>
             <View style={styles.detailPillContent}>
-              <Text style={[styles.detailPillLabel, { color: colors.textSecondary }]}>Location</Text>
-              <Text style={[styles.detailPillValue, { color: colors.text }]}>
-                {gig.venueName}
+              <Text style={[styles.detailPillLabel, { color: colors.textSecondary }]}>
+                Location
               </Text>
+              <Text style={[styles.detailPillValue, { color: colors.text }]}>{gig.venueName}</Text>
               <Text style={[styles.detailPillSub, { color: colors.textSecondary }]}>
                 {gig.addressLine1}, {gig.city}
               </Text>
@@ -233,7 +283,9 @@ export default function GigDetailScreen() {
                 <Ionicons name="musical-note" size={16} color={Brand.purple} />
                 <View style={styles.songInfo}>
                   <Text style={[styles.songTitle, { color: colors.text }]}>{song.title}</Text>
-                  <Text style={[styles.songArtist, { color: colors.textSecondary }]}>{song.artist}</Text>
+                  <Text style={[styles.songArtist, { color: colors.textSecondary }]}>
+                    {song.artist}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -242,9 +294,7 @@ export default function GigDetailScreen() {
 
         {/* Description Section */}
         <View style={styles.descriptionSection}>
-          <Text style={[styles.descriptionTitle, { color: colors.text }]}>
-            Description
-          </Text>
+          <Text style={[styles.descriptionTitle, { color: colors.text }]}>Description</Text>
 
           {/* View Applications button for hosters */}
           {isHoster && (
@@ -287,7 +337,8 @@ export default function GigDetailScreen() {
                 </LinearGradient>
               </Pressable>
               <Text style={[styles.applyDisclaimer, { color: colors.textSecondary }]}>
-                Your profile, including your bio, genres, and music links, will be shared with the host for their consideration.
+                Your profile, including your bio, genres, and music links, will be shared with the
+                host for their consideration.
               </Text>
             </>
           )}
@@ -299,6 +350,21 @@ export default function GigDetailScreen() {
                 {applyError ? applyError : 'Application sent'}
               </Text>
             </View>
+          )}
+
+          {/* Invoice export — shown to an accepted musician. The button itself
+              gates on payment status (disabled-with-reason until paid). */}
+          {isAcceptedMusician && (
+            <InvoiceExportButton
+              gig={gig}
+              musicianId={CURRENT_USER.id}
+              applicationStatus={applicationStatus}
+              payment={effectivePayment}
+              sellerName={CURRENT_USER.displayName}
+              buyerName={
+                MOCK_HOSTERS.find((h) => h.id === gig.hosterId)?.displayName ?? gig.venueName
+              }
+            />
           )}
         </View>
       </ScrollView>

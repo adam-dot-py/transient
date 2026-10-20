@@ -6,7 +6,7 @@
 -- Supabase PostgreSQL database structure.
 --
 -- Tables: profiles, musician_profiles, gigs, example_songs, applications,
---         push_tokens, notifications
+--         push_tokens, notifications, amplify_payments, gig_payments
 -- Storage: profile-pictures bucket
 -- =============================================================================
 
@@ -117,6 +117,7 @@ CREATE TABLE gigs (
   status                text             NOT NULL DEFAULT 'available',
   push_enabled          boolean          NOT NULL DEFAULT false,
   accepted_musician_ids uuid[]           NOT NULL DEFAULT '{}',
+  image_url             text,
   created_at            timestamptz      NOT NULL DEFAULT now(),
   updated_at            timestamptz      NOT NULL DEFAULT now()
 );
@@ -350,6 +351,81 @@ CREATE POLICY "Users can read own amplify payments"
 CREATE POLICY "Users can insert own amplify payments"
   ON amplify_payments FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+-- ===========================================================================
+-- Table: gig_payments
+-- ===========================================================================
+-- Records a payout to an ACCEPTED musician for performing a gig. This is the
+-- musician-facing counterpart to amplify_payments (which is a hoster's Amplify
+-- boost purchase, unrelated). It is the source data a musician uses to generate
+-- an invoice. amount_pence stores the pay in pence (gig.pay is whole pounds).
+-- invoice_number is assigned when the payment is first invoiced; paid_at is set
+-- when status becomes 'paid'.
+-- ===========================================================================
+CREATE TABLE gig_payments (
+  id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  gig_id         uuid        NOT NULL REFERENCES gigs(id) ON DELETE CASCADE,
+  musician_id    uuid        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  amount_pence   integer     NOT NULL CHECK (amount_pence BETWEEN 1 AND 9999900),
+  currency       text        NOT NULL DEFAULT 'gbp',
+  status         text        NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid')),
+  invoice_number text,
+  paid_at        timestamptz,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT uq_gig_payment_gig_musician UNIQUE (gig_id, musician_id)
+);
+
+CREATE TRIGGER gig_payments_updated_at
+  BEFORE UPDATE ON gig_payments
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Indexes: gig_payments
+CREATE INDEX idx_gig_payments_musician_id ON gig_payments(musician_id);
+CREATE INDEX idx_gig_payments_gig_id ON gig_payments(gig_id);
+-- Partial unique index: invoice numbers are unique once assigned; uninvoiced
+-- rows (NULL invoice_number) do not collide.
+CREATE UNIQUE INDEX uq_gig_payments_invoice_number
+  ON gig_payments(invoice_number)
+  WHERE invoice_number IS NOT NULL;
+
+-- RLS: gig_payments
+ALTER TABLE gig_payments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Musicians can read own gig payments"
+  ON gig_payments FOR SELECT
+  USING (auth.uid() = musician_id);
+
+CREATE POLICY "Hosters can read gig payments for their gigs"
+  ON gig_payments FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM gigs WHERE gigs.id = gig_id AND gigs.hoster_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Hosters can insert gig payments for their gigs"
+  ON gig_payments FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM gigs WHERE gigs.id = gig_id AND gigs.hoster_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Hosters can update gig payments for their gigs"
+  ON gig_payments FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM gigs WHERE gigs.id = gig_id AND gigs.hoster_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM gigs WHERE gigs.id = gig_id AND gigs.hoster_id = auth.uid()
+    )
+  );
 
 -- ===========================================================================
 -- Storage: profile-pictures bucket

@@ -11,7 +11,14 @@ import type { CreateGigInput, Genre, Gig, GigFilter, GigStatus, ValidationError 
 
 /** All valid genre values for validation */
 const VALID_GENRES: Genre[] = [
-  'rock', 'jazz', 'blues', 'electronic', 'folk', 'classical', 'pop', 'country',
+  'rock',
+  'jazz',
+  'blues',
+  'electronic',
+  'folk',
+  'classical',
+  'pop',
+  'country',
 ];
 
 /**
@@ -67,6 +74,7 @@ export function createGig(
     status: 'available',
     hosterId,
     acceptedMusicianIds: [],
+    imageUrl: input.imageUrl ?? null,
   };
 
   return { gig: newGig, gigs: [...gigs, newGig] };
@@ -108,11 +116,7 @@ export function filterByStatus(gigs: Gig[], status: GigStatus): Gig[] {
  * - Caps the list at `max` items (default 20)
  * - Returns a new array (does not mutate the input)
  */
-export function addToRecentlyViewed(
-  list: string[],
-  gigId: string,
-  max: number = 20
-): string[] {
+export function addToRecentlyViewed(list: string[], gigId: string, max: number = 20): string[] {
   const filtered = list.filter((id) => id !== gigId);
   return [gigId, ...filtered].slice(0, max);
 }
@@ -131,9 +135,7 @@ export function addToRecentlyViewed(
  *
  * Returns null if valid, or a ValidationError with all field errors if invalid.
  */
-export function validateGigInput(
-  input: Partial<CreateGigInput>
-): ValidationError | null {
+export function validateGigInput(input: Partial<CreateGigInput>): ValidationError | null {
   const fields: Record<string, string> = {};
 
   // Required field checks
@@ -230,9 +232,10 @@ export function validateGigInput(
  *
  * Returns { isValid: true } if valid, or { isValid: false, error: string } if invalid.
  */
-export function validateExampleSongs(
-  songs: { title: string; artist: string }[]
-): { isValid: boolean; error?: string } {
+export function validateExampleSongs(songs: { title: string; artist: string }[]): {
+  isValid: boolean;
+  error?: string;
+} {
   if (songs.length > 10) {
     return { isValid: false, error: 'Maximum of 10 example songs allowed' };
   }
@@ -279,12 +282,7 @@ export function isValidCoordinate(latitude: number, longitude: number): boolean 
   if (latitude === 0 || longitude === 0) {
     return false;
   }
-  return (
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180
-  );
+  return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
 }
 
 /**

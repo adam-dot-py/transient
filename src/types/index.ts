@@ -13,14 +13,7 @@ export type GigStatus = 'available' | 'accepted' | 'past';
 
 /** Supported music genres for gig categorization */
 export type Genre =
-  | 'rock'
-  | 'jazz'
-  | 'blues'
-  | 'electronic'
-  | 'folk'
-  | 'classical'
-  | 'pop'
-  | 'country';
+  'rock' | 'jazz' | 'blues' | 'electronic' | 'folk' | 'classical' | 'pop' | 'country';
 
 /** A single gig listing with all its metadata */
 export interface Gig {
@@ -43,6 +36,12 @@ export interface Gig {
   status: GigStatus;
   hosterId: string;
   acceptedMusicianIds: string[];
+  /**
+   * Optional hero/card image for the gig (a storage path or URL). When null or
+   * absent the UI falls back to the gradient placeholder. Mirrors the nullable
+   * `profiles.avatar_url` convention.
+   */
+  imageUrl?: string | null;
 }
 
 /** Input shape for creating a new gig (no id, status, or hosterId) */
@@ -60,6 +59,8 @@ export interface CreateGigInput {
   genres: Genre[];
   pay: number;
   description?: string;
+  /** Optional image for the gig (local uri in mock mode, storage path/URL live). */
+  imageUrl?: string;
 }
 
 /** Validation error returned when gig input fails checks */
@@ -161,6 +162,81 @@ export interface ApplicationWithProfile {
   message: string | null;
   createdAt: string;
   musician: FullMusicianProfile;
+}
+
+/** Lifecycle status of a musician's payout for a gig */
+export type GigPaymentStatus = 'pending' | 'paid';
+
+/**
+ * A payout to an accepted musician for performing a gig.
+ *
+ * This is the musician-facing payment record (distinct from an Amplify boost
+ * purchase) and the source data for generating an invoice. Amounts are stored
+ * in PENCE (gig.pay is whole pounds). `invoiceNumber` is assigned when the
+ * payment is first invoiced; `paidAt` is set once the payment is `paid`.
+ */
+export interface GigPayment {
+  id: string;
+  gigId: string;
+  musicianId: string;
+  /** Payout amount in pence (e.g. £250.00 => 25000). */
+  amountPence: number;
+  /** ISO currency code, e.g. 'gbp'. */
+  currency: string;
+  status: GigPaymentStatus;
+  /** Assigned when first invoiced; null until then. */
+  invoiceNumber: string | null;
+  /** ISO 8601 timestamp set when the payment became 'paid'; null otherwise. */
+  paidAt: string | null;
+  /** ISO 8601 timestamp of when the payment record was created. */
+  createdAt: string;
+}
+
+/** A named party on an invoice (seller or buyer) with a postal address. */
+export interface InvoiceParty {
+  name: string;
+  /** Address rendered one line per array element. */
+  addressLines: string[];
+  email?: string;
+}
+
+/**
+ * A professional invoice assembled from a gig, its parties, and a paid payout.
+ *
+ * All monetary fields are in PENCE to avoid floating-point rounding. The seller
+ * is the musician who performed; the buyer is the hoster/venue who paid.
+ */
+export interface Invoice {
+  /** Human-readable invoice number, e.g. 'INV-20240131-AB12CD'. */
+  invoiceNumber: string;
+  /** ISO 8601 date the invoice was issued. */
+  issueDate: string;
+  /** The musician being paid. */
+  seller: InvoiceParty;
+  /** The hoster/venue paying. */
+  buyer: InvoiceParty;
+  gigTitle: string;
+  /** ISO 8601 date of the gig (YYYY-MM-DD). */
+  gigDate: string;
+  gigStartTime: string;
+  gigEndTime: string;
+  venueName: string;
+  /** Venue address rendered as a single display string. */
+  venueAddress: string;
+  description: string;
+  lineItems: { description: string; amountPence: number }[];
+  subtotalPence: number;
+  totalPence: number;
+  /** ISO currency code, e.g. 'gbp'. */
+  currency: string;
+  /** Short note about tax/VAT treatment. */
+  taxNote: string;
+  /** Always 'paid' — an invoice is only generated for a paid gig. */
+  paymentStatus: 'paid';
+  /** Reference derived from the payment id, for reconciliation. */
+  paymentReference: string;
+  /** ISO 8601 timestamp the payment was settled. */
+  paidAt: string;
 }
 
 /** AsyncStorage key constants */

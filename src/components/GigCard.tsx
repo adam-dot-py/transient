@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -64,13 +65,23 @@ export function GigCard({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      {/* Gradient image placeholder */}
-      <LinearGradient
-        colors={[semantic.cardImageGradientStart, semantic.cardImageGradientEnd]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Uploaded gig image when present, else the gradient placeholder. */}
+      {gig.imageUrl ? (
+        <Image
+          source={{ uri: gig.imageUrl }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={200}
+          testID="gig-card-image"
+        />
+      ) : (
+        <LinearGradient
+          colors={[semantic.cardImageGradientStart, semantic.cardImageGradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
 
       {/* Yellow/warm glow accent (subtle) */}
       <View style={styles.glowAccent} />
